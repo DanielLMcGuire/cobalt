@@ -12,7 +12,7 @@
 #endif
 
 #if defined(__linux__)
-#include "sys_linux.h"
+#include <sys_linux.h>
 #endif
 
 IMPLEMENT(FileStream, i64, read, (void *self, void *buf, size_t n))
@@ -244,7 +244,7 @@ IMPLEMENT(FileStream, void, close, (void *self))
 
 CONSTRUCTOR(FileStream)
 {
-    SUPER_CTOR(self, Stream);
+    SUPER_CTOR(self, IStream);
 
 #if defined(_WIN32)
     self->fd = INVALID_HANDLE_VALUE;
@@ -282,14 +282,14 @@ DECONSTRUCTOR(FileStream)
 
 #endif
 
-    SUPER_DTOR(self, Stream);
+    SUPER_DTOR(self, IStream);
 }
 
 
-CLASS_INFO(FileStream, Stream);
+CLASS_INFO(FileStream, IStream);
 
 
-Stream *fopen(const char *path, const char *mode)
+IStream *fopen(const char *path, const char *mode)
 {
     if (!path || !mode || !mode[0])
         return NULL;
@@ -354,7 +354,7 @@ Stream *fopen(const char *path, const char *mode)
     fs->owns_fd  = true;
     fs->eof_flag = false;
 
-    return (Stream *)fs;
+    return (IStream *)fs;
 
 #elif defined(__linux__)
 
@@ -406,7 +406,7 @@ Stream *fopen(const char *path, const char *mode)
     fs->owns_fd  = true;
     fs->eof_flag = false;
 
-    return (Stream *)fs;
+    return (IStream *)fs;
 
 #else
 
@@ -458,23 +458,23 @@ void fs_init(void)
 
 #endif
 
-Stream *stdin(void)
+IStream *stdin(void)
 {
-    return (Stream *)g_stdin_stream;
+    return (IStream *)g_stdin_stream;
 }
 
-Stream *stdout(void)
+IStream *stdout(void)
 {
-    return (Stream *)g_stdout_stream;
+    return (IStream *)g_stdout_stream;
 }
 
 
-Stream *stderr(void)
+IStream *stderr(void)
 {
-    return (Stream *)g_stderr_stream;
+    return (IStream *)g_stderr_stream;
 }
 
-i64 fwrite(Stream *s, const char *str)
+i64 fwrite(IStream *s, const char *str)
 {
     if (!s || !str)
         return -1;
@@ -483,7 +483,7 @@ i64 fwrite(Stream *s, const char *str)
 }
 
 
-i64 freadline(Stream *s, dstr_t *out)
+i64 freadline(IStream *s, dstr_t *out)
 {
     if (!s || !out)
         return -1;
@@ -518,7 +518,7 @@ i64 freadline(Stream *s, dstr_t *out)
 }
 
 
-int fprintf(Stream *s, const char *fmt, ...)
+int fprintf(IStream *s, const char *fmt, ...)
 {
     char stack_buf[1024];
 

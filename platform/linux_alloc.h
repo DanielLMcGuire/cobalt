@@ -4,7 +4,7 @@
 
 #ifndef LINUX_ALLOC_H
 #define LINUX_ALLOC_H
-#include "../../include/def.h"
+#include "../libminicrt/include/def.h"
 #include "sys_linux.h"
 enum {
     __LINUX_ARENA_SIZE = 64 * 1024,

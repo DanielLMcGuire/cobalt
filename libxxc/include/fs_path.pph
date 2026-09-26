@@ -27,4 +27,4 @@ CLASS_EXPORT(FSPath);
 
 FSPath *fs_path(dstr_t path);
 
-#endif /* C_FS_PATH_H */
+#endif /* FS_PATH_H */

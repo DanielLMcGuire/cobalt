@@ -4,7 +4,7 @@
 
 #ifndef SYS_LINUX_H
 #define SYS_LINUX_H
-#include "../../include/def.h"
+#include "../libminicrt/include/def.h"
 #include <asm/unistd.h>
 #define PROT_READ   0x1
 #define PROT_WRITE  0x2

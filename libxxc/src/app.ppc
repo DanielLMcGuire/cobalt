@@ -5,41 +5,41 @@
 #include <app.pph>
 #include <sio.h>
 
-CLASS_INFO_ROOT(App);
+CLASS_INFO_ROOT(IApp);
 
-CONSTRUCTOR(App)
+CONSTRUCTOR(IApp)
 {
     self->show_help = false;
     self->program = (dstr_t){0};
     self->args = NEW(ArgParser);
 
-    METHOD_LINK(App, configure_args);
-    METHOD_LINK(App, run);
-    METHOD_LINK(App, parse_args);
-    METHOD_LINK(App, print_help);
-    METHOD_LINK(App, main);
+    METHOD_LINK(IApp, configure_args);
+    METHOD_LINK(IApp, run);
+    METHOD_LINK(IApp, parse_args);
+    METHOD_LINK(IApp, print_help);
+    METHOD_LINK(IApp, main);
 }
 
-DECONSTRUCTOR(App)
+DECONSTRUCTOR(IApp)
 {
     REMOVE(self->args);
     dstr_free(&self->program);
 }
 
-IMPLEMENT(App, void, configure_args, (void *self))
+IMPLEMENT(IApp, void, configure_args, (void *self))
 {
     (void)self;
 }
 
-IMPLEMENT(App, int, run, (void *self))
+IMPLEMENT(IApp, int, run, (void *self))
 {
     (void)self;
     return 0;
 }
 
-IMPLEMENT(App, void, parse_args, (void *self, const parr_t *argv))
+IMPLEMENT(IApp, void, parse_args, (void *self, const parr_t *argv))
 {
-    App *this = (App *)self;
+    IApp *this = (IApp *)self;
 
     this->program = dstr_new((argv && argv->len > 0) ? (const char *)argv->data[0] : "");
 
@@ -52,18 +52,18 @@ IMPLEMENT(App, void, parse_args, (void *self, const parr_t *argv))
     this->show_help = CALL1(this->args, get_bool, "help");
 }
 
-IMPLEMENT(App, void, print_help, (void *self))
+IMPLEMENT(IApp, void, print_help, (void *self))
 {
-    App *this = (App *)self;
+    IApp *this = (IApp *)self;
 
     printf("Usage: %s [OPTIONS...]\n", this->program.data ? this->program.data : "app");
     puts("OPTIONS:", SIOOUT);
     CALL0(this->args, print_flags);
 }
 
-IMPLEMENT(App, int, main, (void *self))
+IMPLEMENT(IApp, int, main, (void *self))
 {
-    App *this = (App *)self;
+    IApp *this = (IApp *)self;
 
     if (this->show_help)
     {

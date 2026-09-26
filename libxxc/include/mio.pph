@@ -11,7 +11,7 @@
 
 CLASS(MemoryStream)
 {
-    BASE(Stream)
+    BASE(IStream)
     FIELD(char *, buffer)
     FIELD(size_t, size)
     FIELD(size_t, capacity)
@@ -22,4 +22,4 @@ CLASS_EXPORT(MemoryStream);
 
 const char *mstream_get_buffer(MemoryStream *mstream);
 
-#endif /* M_FIO_H */
+#endif /* MIO_H */

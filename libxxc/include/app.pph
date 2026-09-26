@@ -2,15 +2,15 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#ifndef APP_H
-#define APP_H
+#ifndef IAPP_H
+#define IAPP_H
 
 #include <class.pph>
 #include <argparse.pph>
 #include <dstr.h>
 #include <parr.h>
 
-CLASS(App)
+CLASS(IApp)
 {
     FIELD(ArgParser *, args)
     FIELD(bool, show_help)
@@ -24,12 +24,12 @@ CLASS(App)
     METHOD(int, main, (void *self))
 };
 
-CLASS_EXPORT(App);
+CLASS_EXPORT(IApp);
 
-void METHOD_DECL(App, configure_args)(void *self);
-int METHOD_DECL(App, run)(void *self);
-void METHOD_DECL(App, parse_args)(void *self, const parr_t *argv);
-void METHOD_DECL(App, print_help)(void *self);
-int METHOD_DECL(App, main)(void *self);
+void METHOD_DECL(IApp, configure_args)(void *self);
+int METHOD_DECL(IApp, run)(void *self);
+void METHOD_DECL(IApp, parse_args)(void *self, const parr_t *argv);
+void METHOD_DECL(IApp, print_help)(void *self);
+int METHOD_DECL(IApp, main)(void *self);
 
-#endif /* APP_H */
+#endif /* IAPP_H */

@@ -9,9 +9,9 @@
 #define MINOR 1
 #define MAJOR 0
 
-CLASS(Demo, App)
+CLASS(Demo, IApp)
 {
-    BASE(App)
+    BASE(IApp)
     METHOD(bool, process_args, (void *self))
     FIELD(bool, showVersion)
     FIELD(bool, showAbout)
@@ -23,12 +23,12 @@ void METHOD_DECL(Demo, configure_args)(void *self);
 int METHOD_DECL(Demo, run)(void *self);
 bool METHOD_DECL(Demo, process_args)(void *self);
 
-CLASS_INFO(Demo, App);
+CLASS_INFO(Demo, IApp);
 
 CONSTRUCTOR(Demo)
 {
     Demo *this = (Demo *)self;
-    SUPER_CTOR(self, App);
+    SUPER_CTOR(self, IApp);
 
     METHOD_LINK(base, Demo, configure_args);
     METHOD_LINK(base, Demo, run);
@@ -38,7 +38,7 @@ CONSTRUCTOR(Demo)
 DECONSTRUCTOR(Demo)
 {
     Demo *this = (Demo *)self;
-    SUPER_DTOR(self, App);
+    SUPER_DTOR(self, IApp);
 }
 
 IMPLEMENT(Demo, void, configure_args, (void *self))
@@ -85,7 +85,7 @@ IMPLEMENT(Demo, bool, process_args, (void *self))
 int program(parr_t csArgs)
 {
     Demo *demo = NEW(Demo);
-    App *app = AS(App, demo);
+    IApp *app = AS(IApp, demo);
 
     CALL1(app, parse_args, &csArgs);
 

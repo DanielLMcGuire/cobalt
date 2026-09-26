@@ -11,7 +11,7 @@
 #if defined(_WIN32)
 #include <windows.h>
 #elif defined(__linux__)
-#include "sys_linux.h"
+#include <sys_linux.h>
 #endif
 
 static dstr_t fs_path_to_str(FSPath *self) {

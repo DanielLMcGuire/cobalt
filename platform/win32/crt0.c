@@ -5,7 +5,7 @@ extern void free(void *ptr);
 #define va_start vastart_guard
 #include <windows.h>
 #undef va_start
-#include "../../../include/def.h"
+#include "../../libminicrt/include/def.h"
 #include "commandline.h"
 
 extern void exit(int status);

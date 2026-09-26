@@ -14,16 +14,22 @@
     #ifndef nullptr
         #define nullptr ((void *)0) 
     #endif
+    #ifndef NULL
+        #define NULL ((void *)0)
+    #endif
     #ifndef true
         #define true 1
     #endif
     #ifndef false
         #define false 0
     #endif
-#endif
-
-#ifndef NULL
-    #define NULL ((void *)0)
+#else
+    #ifndef NULL
+        #define NULL nullptr
+    #else
+        #undef NULL
+        #define NULL nullptr
+    #endif
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)

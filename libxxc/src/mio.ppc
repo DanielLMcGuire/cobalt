@@ -113,7 +113,7 @@ IMPLEMENT(MemoryStream, void, close, (void *self))
 
 CONSTRUCTOR(MemoryStream)
 {
-    SUPER_CTOR(self, Stream);
+    SUPER_CTOR(self, IStream);
 
     self->buffer = NULL;
     self->size = 0;
@@ -136,10 +136,10 @@ DECONSTRUCTOR(MemoryStream)
         self->buffer = NULL;
     }
 
-    SUPER_DTOR(self, Stream);
+    SUPER_DTOR(self, IStream);
 }
 
-CLASS_INFO(MemoryStream, Stream);
+CLASS_INFO(MemoryStream, IStream);
 
 const char *mstream_get_buffer(MemoryStream *mstream)
 {
