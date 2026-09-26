@@ -51,6 +51,7 @@ IMPLEMENT(Demo, void, configure_args, (void *self))
 IMPLEMENT(Demo, int, run, (void *self))
 {
     Demo *this = (Demo *)self;
+    IApp *app = AS(IApp, this);
 
     if (!this->process_args(self)) return 1;
 
@@ -66,7 +67,7 @@ IMPLEMENT(Demo, int, run, (void *self))
     }
     
     printf("++C Demo v%d.%d\n", MAJOR, MINOR);
-    CALL0(this->base.args, print_flags);
+    CALL0(app, print_help);
 
     return 0;
 }
