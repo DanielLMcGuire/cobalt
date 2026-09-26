@@ -1,2 +1,3 @@
 src/**/*.pph linguist-language=C
 src/**/*.ppc linguist-language=C
+src/**/*.inl linguist-language=C
