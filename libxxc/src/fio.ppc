@@ -423,12 +423,40 @@ static FileStream *g_stdin_stream;
 static FileStream *g_stdout_stream;
 static FileStream *g_stderr_stream;
 
-void fs_init(FileStream *stdin, FileStream *stdout, FileStream *stderr)
+#ifdef _WIN32
+#include <windows.h>
+
+void fs_init(void)
 {
-    g_stdin_stream = stdin;
-    g_stdout_stream = stdout;
-    g_stderr_stream = stderr;
+    g_stdin_stream = NEW(FileStream);
+    g_stdout_stream = NEW(FileStream);
+    g_stderr_stream  = NEW(FileStream);
+    g_stdin_stream->fd  = GetStdHandle(STD_INPUT_HANDLE);
+    g_stdout_stream->fd = GetStdHandle(STD_OUTPUT_HANDLE);
+    g_stderr_stream->fd = GetStdHandle(STD_ERROR_HANDLE);
+    g_stdin_stream->owns_fd  = false;
+    g_stdout_stream->owns_fd = false;
+    g_stderr_stream->owns_fd = false;
 }
+
+#elif defined(__linux__)
+
+void fs_init(void)
+{
+    g_stdout_stream = NEW(FileStream);
+    g_stderr_stream = NEW(FileStream);
+    g_stdin_stream  = NEW(FileStream);
+
+    g_stdout_stream->fd = 1;
+    g_stderr_stream->fd = 2;
+    g_stdin_stream->fd  = 0;
+
+    g_stdout_stream->owns_fd = false;
+    g_stderr_stream->owns_fd = false;
+    g_stdin_stream->owns_fd = false;
+}
+
+#endif
 
 Stream *stdin(void)
 {
@@ -467,7 +495,6 @@ i64 freadline(Stream *s, dstr_t *out)
 
     for (;;)
     {
-
         i64 r = CALL2(s, read, &c, 1);
 
         if (r <= 0)
@@ -479,6 +506,12 @@ i64 freadline(Stream *s, dstr_t *out)
             break;
 
         dstr_append_char(out, c);
+    }
+
+    if (out->len > 0 && out->data[out->len - 1] == '\r')
+    {
+        out->data[out->len - 1] = '\0';
+        out->len--;
     }
 
     return total;

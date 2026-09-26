@@ -32,8 +32,6 @@ CLASS(FileStream)
 
 CLASS_EXPORT(FileStream);
 
-void fs_init(FileStream *stdin, FileStream *stdout, FileStream *stderr);
-
 Stream *fopen(const char *path, const char *mode);
 
 Stream *stdin(void);

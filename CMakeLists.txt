@@ -3,13 +3,14 @@ cmake_minimum_required(VERSION 3.25)
 project(plusplusc LANGUAGES C ASM)
 set(CMAKE_C_STANDARD 23)
 
-add_subdirectory("crt")
+add_subdirectory("libminicrt")
+add_subdirectory("libxxc")
 
 set_source_files_properties(main.ppc
     PROPERTIES LANGUAGE C
 )
 add_executable(min main.ppc)
-target_link_libraries(min PRIVATE plusplusc)
+target_link_libraries(min PRIVATE xxc)
 
 if (WIN32)
     target_link_libraries(min PRIVATE kernel32)
