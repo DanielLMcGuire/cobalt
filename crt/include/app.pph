@@ -1,0 +1,35 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef APP_H
+#define APP_H
+
+#include <class.pph>
+#include <argparse.pph>
+#include <dstr.h>
+#include <parr.h>
+
+CLASS(App)
+{
+    FIELD(ArgParser *, args)
+    FIELD(bool, show_help)
+    FIELD(dstr_t, program)
+
+    METHOD(void, configure_args, (void *self))
+    METHOD(int, run, (void *self))
+
+    METHOD(void, parse_args, (void *self, const parr_t *argv))
+    METHOD(void, print_help, (void *self))
+    METHOD(int, main, (void *self))
+};
+
+CLASS_EXPORT(App);
+
+void METHOD_DECL(App, configure_args)(void *self);
+int METHOD_DECL(App, run)(void *self);
+void METHOD_DECL(App, parse_args)(void *self, const parr_t *argv);
+void METHOD_DECL(App, print_help)(void *self);
+int METHOD_DECL(App, main)(void *self);
+
+#endif /* APP_H */

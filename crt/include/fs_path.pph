@@ -1,0 +1,30 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef FS_PATH_H
+#define FS_PATH_H
+
+#include <def.h>
+#include <class.pph>
+#include <dstr.h>
+#include <parr.h>
+
+CLASS(FSPath)
+{
+    FIELD(parr_t, dsData)
+
+    METHOD(void,     join,     (void *self, const char *path))
+    METHOD(FSPath *, parent,   (void *self))
+    METHOD(FSPath *, base,     (void *self))
+    METHOD(FSPath *, relative, (void *self))
+    METHOD(bool,     remove,   (void *self))
+    METHOD(bool,     touch,    (void *self))
+    METHOD(dstr_t,   data,     (void *self))
+};
+
+CLASS_EXPORT(FSPath);
+
+FSPath *fs_path(dstr_t path);
+
+#endif /* C_FS_PATH_H */

@@ -1,0 +1,33 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef ARGPARSE_H
+#define ARGPARSE_H
+
+#include <class.pph>
+#include <dstr.h>
+#include <parr.h>
+
+CLASS(ArgParser)
+{
+    FIELD(parr_t, flags)
+
+    METHOD(void, add_flag, (void *self, const char *name, const char *description))
+    METHOD(void, add_value_flag, (void *self, const char *name, const char *description))
+    METHOD(void, parse, (void *self, const parr_t *argv))
+    METHOD(bool, get_bool, (void *self, const char *name))
+    METHOD(const char *, get_string, (void *self, const char *name, const char *default_value))
+    METHOD(void, print_flags, (void *self))
+};
+
+CLASS_EXPORT(ArgParser);
+
+void METHOD_DECL(ArgParser, add_flag)(void *self, const char *name, const char *description);
+void METHOD_DECL(ArgParser, add_value_flag)(void *self, const char *name, const char *description);
+void METHOD_DECL(ArgParser, parse)(void *self, const parr_t *argv);
+bool METHOD_DECL(ArgParser, get_bool)(void *self, const char *name);
+const char *METHOD_DECL(ArgParser, get_string)(void *self, const char *name, const char *default_value);
+void METHOD_DECL(ArgParser, print_flags)(void *self);
+
+#endif

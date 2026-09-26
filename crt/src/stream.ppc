@@ -1,0 +1,69 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#include <stream.pph>
+
+IMPLEMENT(Stream, i64, read, (void *self, void *buf, size_t n))
+{
+    (void)self;
+    (void)buf;
+    (void)n;
+
+    return -1;
+}
+
+IMPLEMENT(Stream, i64, write, (void *self, const void *buf, size_t n))
+{
+    (void)self;
+    (void)buf;
+    (void)n;
+
+    return -1;
+}
+
+IMPLEMENT(Stream, i64, seek, (void *self, i64 offset, int whence))
+{
+    (void)self;
+    (void)offset;
+    (void)whence;
+
+    return -1;
+}
+
+IMPLEMENT(Stream, i64, tell, (void *self))
+{
+    (void)self;
+
+    return -1;
+}
+
+IMPLEMENT(Stream, int, eof, (void *self))
+{
+    (void)self;
+
+    return 1;
+}
+
+IMPLEMENT(Stream, void, close, (void *self))
+{
+    (void)self;
+}
+
+
+CONSTRUCTOR(Stream)
+{
+    METHOD_LINK(Stream, read);
+    METHOD_LINK(Stream, write);
+    METHOD_LINK(Stream, seek);
+    METHOD_LINK(Stream, tell);
+    METHOD_LINK(Stream, eof);
+    METHOD_LINK(Stream, close);
+}
+
+DECONSTRUCTOR(Stream)
+{
+    (void)self;
+}
+
+CLASS_INFO_ROOT(Stream);

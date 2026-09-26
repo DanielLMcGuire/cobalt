@@ -1,0 +1,47 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef FIO_H
+#define FIO_H
+
+#include <def.h>
+#include <class.pph>
+#include <dstr.h>
+#include <stream.pph>
+
+#define FS_SEEK_SET 0
+#define FS_SEEK_CUR 1
+#define FS_SEEK_END 2
+
+CLASS(FileStream)
+{
+    BASE(Stream)
+#if defined(_WIN32)
+    FIELD(void *, fd)
+#else
+    FIELD(int,  fd)
+#endif
+    FIELD(bool, owns_fd)
+    FIELD(bool, eof_flag)
+};
+
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
+CLASS_EXPORT(FileStream);
+
+void fs_init(FileStream *stdin, FileStream *stdout, FileStream *stderr);
+
+Stream *fopen(const char *path, const char *mode);
+
+Stream *stdin(void);
+Stream *stdout(void);
+Stream *stderr(void);
+
+i64 fwrite(Stream *s, const char *str);
+i64 freadline(Stream *s, dstr_t *out);
+int fprintf(Stream *s, const char *fmt, ...);
+
+#endif /* FIO_H */

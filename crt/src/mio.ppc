@@ -1,0 +1,149 @@
+#include <mio.pph>
+#include <def.h>
+#include <memory.h>
+
+IMPLEMENT(MemoryStream, i64, read, (void *self, void *buf, size_t n))
+{
+    MemoryStream *this = (MemoryStream *)self;
+
+    if (!buf || n == 0)
+        return 0;
+
+    if (this->position >= this->size)
+        return 0;
+
+    size_t available = this->size - this->position;
+    size_t to_read = (n < available) ? n : available;
+
+    memcpy(buf, this->buffer + this->position, to_read);
+    this->position += to_read;
+
+    return (i64)to_read;
+}
+
+IMPLEMENT(MemoryStream, i64, write, (void *self, const void *buf, size_t n))
+{
+    MemoryStream *this = (MemoryStream *)self;
+
+    if (!buf || n == 0)
+        return 0;
+
+    size_t required_capacity = this->position + n;
+
+    if (required_capacity > this->capacity)
+    {
+        size_t new_capacity = this->capacity == 0 ? 64 : this->capacity * 2;
+        
+        while (new_capacity < required_capacity)
+            new_capacity *= 2;
+
+        char *new_buffer = (char *)realloc(this->buffer, new_capacity);
+        if (!new_buffer)
+            return -1;
+
+        this->buffer = new_buffer;
+        this->capacity = new_capacity;
+    }
+
+    memcpy(this->buffer + this->position, buf, n);
+    this->position += n;
+
+    if (this->position > this->size)
+        this->size = this->position;
+
+    return (i64)n;
+}
+
+IMPLEMENT(MemoryStream, i64, seek, (void *self, i64 offset, int whence))
+{
+    MemoryStream *this = (MemoryStream *)self;
+    i64 new_pos = -1;
+
+    switch (whence)
+    {
+        case FS_SEEK_SET:
+            new_pos = offset;
+            break;
+
+        case FS_SEEK_CUR:
+            new_pos = (i64)this->position + offset;
+            break;
+
+        case FS_SEEK_END:
+            new_pos = (i64)this->size + offset;
+            break;
+
+        default:
+            return -1;
+    }
+
+    if (new_pos < 0)
+        return -1;
+
+    this->position = (size_t)new_pos;
+    return new_pos;
+}
+
+IMPLEMENT(MemoryStream, i64, tell, (void *self))
+{
+    MemoryStream *this = (MemoryStream *)self;
+    return (i64)this->position;
+}
+
+IMPLEMENT(MemoryStream, int, eof, (void *self))
+{
+    MemoryStream *this = (MemoryStream *)self;
+    return (this->position >= this->size) ? 1 : 0;
+}
+
+IMPLEMENT(MemoryStream, void, close, (void *self))
+{
+    MemoryStream *this = (MemoryStream *)self;
+
+    if (this->buffer)
+    {
+        free(this->buffer);
+        this->buffer = NULL;
+    }
+
+    this->size = 0;
+    this->capacity = 0;
+    this->position = 0;
+}
+
+CONSTRUCTOR(MemoryStream)
+{
+    SUPER_CTOR(self, Stream);
+
+    self->buffer = NULL;
+    self->size = 0;
+    self->capacity = 0;
+    self->position = 0;
+
+    METHOD_LINK(base, MemoryStream, read);
+    METHOD_LINK(base, MemoryStream, write);
+    METHOD_LINK(base, MemoryStream, seek);
+    METHOD_LINK(base, MemoryStream, tell);
+    METHOD_LINK(base, MemoryStream, eof);
+    METHOD_LINK(base, MemoryStream, close);
+}
+
+DECONSTRUCTOR(MemoryStream)
+{
+    if (self->buffer)
+    {
+        free(self->buffer);
+        self->buffer = NULL;
+    }
+
+    SUPER_DTOR(self, Stream);
+}
+
+CLASS_INFO(MemoryStream, Stream);
+
+const char *mstream_get_buffer(MemoryStream *mstream)
+{
+    if (!mstream)
+        return NULL;
+    return mstream->buffer;
+}

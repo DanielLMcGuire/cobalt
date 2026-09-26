@@ -1,0 +1,25 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef MIO_H
+#define MIO_H
+
+#include <def.h>
+#include <class.pph>
+#include <stream.pph>
+
+CLASS(MemoryStream)
+{
+    BASE(Stream)
+    FIELD(char *, buffer)
+    FIELD(size_t, size)
+    FIELD(size_t, capacity)
+    FIELD(size_t, position)
+};
+
+CLASS_EXPORT(MemoryStream);
+
+const char *mstream_get_buffer(MemoryStream *mstream);
+
+#endif /* M_FIO_H */

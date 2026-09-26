@@ -1,0 +1,65 @@
+// ++C CRT | Platform (Linux)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef SYS_LINUX_H
+#define SYS_LINUX_H
+#include "../../include/def.h"
+#include <asm/unistd.h>
+#define PROT_READ   0x1
+#define PROT_WRITE  0x2
+#define MAP_PRIVATE 0x02
+#define MAP_ANON    0x20
+
+#ifndef FUTEX_WAIT
+#define FUTEX_WAIT 0
+#endif
+#ifndef FUTEX_WAKE
+#define FUTEX_WAKE 1
+#endif
+#ifndef FUTEX_PRIVATE_FLAG
+#define FUTEX_PRIVATE_FLAG 128
+#endif
+#ifndef FUTEX_WAIT_PRIVATE
+#define FUTEX_WAIT_PRIVATE (FUTEX_WAIT | FUTEX_PRIVATE_FLAG)
+#endif
+#ifndef FUTEX_WAKE_PRIVATE
+#define FUTEX_WAKE_PRIVATE (FUTEX_WAKE | FUTEX_PRIVATE_FLAG)
+#endif
+
+#define O_RDONLY   00
+#define O_WRONLY   01
+#define O_RDWR     02
+#define O_CREAT    0100
+#define O_EXCL     0200
+#define O_TRUNC    01000
+#define O_APPEND   02000
+
+#define AT_FDCWD (-100)
+
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
+long __syscall0(long n);
+long __syscall1(long n, long a1);
+long __syscall2(long n, long a1, long a2);
+long __syscall3(long n, long a1, long a2, long a3);
+long __syscall4(long n, long a1, long a2, long a3, long a4);
+long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
+
+long sys_unlink(const char *path);
+long sys_write(int fd, const void *buf, size_t count);
+long sys_read(int fd, void *buf, size_t count);
+int sys_close(int fd);
+long sys_lseek(int fd, long offset, int whence);
+long sys_openat(int dirfd, const char *path, int flags, int mode);
+void sys_exit(int status);
+void* sys_mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset);
+int sys_munmap(void *addr, size_t length);
+long sys_futex(int *uaddr, int op, int val, const void *timeout, int *uaddr2, int val3);
+
+long sys_rt_sigaction(int signum, const void *act, void *oldact, size_t sigsetsize);
+long sys_getpid(void);
+long sys_kill(long pid, int sig);
+#endif /* SYS_LINUX_H */

@@ -1,0 +1,210 @@
+// ++C
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#include <sio.h>
+#include <dstr.h>
+#include <alloc.h>
+#include <parr.h>
+#include <str.h>
+#include <def.h>
+
+#ifdef _WIN32
+#include <windows.h>
+static HANDLE g_err = INVALID_HANDLE_VALUE;
+static HANDLE g_out = INVALID_HANDLE_VALUE;
+#elif defined(__linux__)
+#include "sys_linux.h"
+#endif
+
+#define PRINTF_STACK_BUF_SIZE 1024
+
+void init_io(unsigned int out, unsigned int err)
+{
+#ifdef _WIN32
+    g_err = GetStdHandle(err);
+    g_out = GetStdHandle(out);
+#endif
+    (void)out; (void)err;
+}
+
+int print(const char *str, unsigned int stream)
+{
+    if (str == NULL) return -1;
+
+#ifdef _WIN32
+    HANDLE handle = (stream == SIOOUT) ? g_out :
+                    ((stream == SIOERR) ? g_err : INVALID_HANDLE_VALUE);
+
+    if (handle == INVALID_HANDLE_VALUE || handle == NULL) return -1;
+
+    DWORD length = (DWORD)strlen(str);
+    if (length == 0) return 1;
+
+    DWORD written = 0;
+    DWORD file_type = GetFileType(handle);
+    DWORD console_mode = 0;
+
+    if (file_type == FILE_TYPE_CHAR && GetConsoleMode(handle, &console_mode))
+    {
+        if (!WriteConsoleA(handle, str, length, &written, NULL)) return -1;
+    }
+    else
+    {
+        if (!WriteFile(handle, str, length, &written, NULL)) return -1;
+    }
+
+#elif defined(__linux__)
+    int fd = (stream == SIOOUT) ? 1 : 2;
+
+    if (sys_write(fd, str, strlen(str)) < 0) return -1;
+#endif
+
+    return 1;
+}
+
+int putchar(int c, unsigned int stream)
+{
+#ifdef _WIN32
+    HANDLE handle = (stream == SIOOUT) ? g_out :
+                    ((stream == SIOERR) ? g_err : INVALID_HANDLE_VALUE);
+
+    if (handle == INVALID_HANDLE_VALUE || handle == NULL) return -1;
+
+    char ch = (char)c;
+    DWORD written = 0;
+    DWORD file_type = GetFileType(handle);
+    DWORD console_mode = 0;
+
+    if (file_type == FILE_TYPE_CHAR && GetConsoleMode(handle, &console_mode))
+    {
+        if (!WriteConsoleA(handle, &ch, 1, &written, NULL))
+            return -1;
+    }
+    else
+    {
+        if (!WriteFile(handle, &ch, 1, &written, NULL)) 
+            return -1;
+    }
+
+#elif defined(__linux__)
+    char ch = (char)c;
+    int fd = (stream == SIOOUT) ? 1 : 2;
+
+    if (sys_write(fd, &ch, 1) < 0) return -1;
+#endif
+
+    return c;
+}
+
+int vprintf(const char *fmt, va_list args, unsigned int stream)
+{
+    char stack_buf[PRINTF_STACK_BUF_SIZE];
+    va_list args_copy;
+    
+    va_copy(args_copy, args);
+    
+    int len = vsnprintf(stack_buf, sizeof(stack_buf), fmt, args);
+    
+    if (len >= 0 && len < (int)sizeof(stack_buf))
+    {
+        print(stack_buf, stream);
+    } 
+    else if (len >= (int)sizeof(stack_buf))
+    {
+        char *dyn_buf = (char*)malloc(len + 1);
+        if (dyn_buf)
+        {
+            vsnprintf(dyn_buf, len + 1, fmt, args_copy);
+            print(dyn_buf, stream);
+            free(dyn_buf);
+        } 
+        else 
+        {
+            print(stack_buf, stream);
+        }
+    }
+    
+    va_end(args_copy);
+    return len;
+}
+
+int printf(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    int ret = vprintf(fmt, args, SIOOUT);
+    va_end(args);
+    return ret;
+}
+
+int puts(const char *str, unsigned int stream)
+{
+    int r;
+    r = print(str, stream);
+    if (r != 1) return r;
+    r = putchar('\n', stream);
+    return r;
+}
+
+int puts_ds(dstr_t *s, unsigned int stream)
+{
+    return puts(s->data, stream);
+}
+
+int print_ds(dstr_t *s, unsigned int stream)
+{
+    return print(s->data, stream);
+}
+
+void print_parr_c_string(const parr_t *csArr, unsigned int stream)
+{
+    if (!csArr) return;
+
+    dstr_t out = dstr_new("[");
+
+    for (size_t i = 0; i < csArr->len; i++)
+    {
+        const char *item = (const char*)csArr->data[i];
+
+        dstr_append_char(&out, '"');
+        if (item)
+            dstr_append(&out, item);
+        dstr_append_char(&out, '"');
+
+        if (i + 1 < csArr->len)
+            dstr_append(&out, ", ");
+    }
+
+    dstr_append_char(&out, ']');
+
+    puts(out.data, stream);
+    dstr_free(&out);
+}
+
+void print_parr_dstr(const parr_t *dsArr, unsigned int stream)
+{
+    if (!dsArr) return;
+
+    dstr_t out = dstr_new("[");
+
+    for (size_t i = 0; i < dsArr->len; i++)
+    {
+        const dstr_t *item = (const dstr_t*)dsArr->data[i];
+
+        dstr_append_char(&out, '"');
+        
+        if (item && item->data)
+            dstr_append(&out, item->data);
+        
+        dstr_append_char(&out, '"');
+
+        if (i + 1 < dsArr->len) 
+            dstr_append(&out, ", ");
+    }
+
+    dstr_append_char(&out, ']');
+
+    puts(out.data, stream);
+    dstr_free(&out);
+}

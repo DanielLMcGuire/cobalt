@@ -1,0 +1,185 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#include <argparse.pph>
+#include <alloc.h>
+#include <str.h>
+#include <sio.h>
+
+typedef struct {
+    dstr_t name;
+    dstr_t description;
+    bool has_value;
+    bool present;
+    dstr_t value;
+} ArgFlag;
+
+static ArgFlag *argflag_new(const char *name, const char *description, bool has_value)
+{
+    ArgFlag *flag = (ArgFlag *)calloc(1, sizeof(ArgFlag));
+    if (!flag)
+        return NULL;
+
+    flag->name = dstr_new(name);
+    flag->description = dstr_new(description);
+    flag->has_value = has_value;
+    flag->present = false;
+    flag->value = dstr_new("");
+
+    return flag;
+}
+
+static void argflag_free(ArgFlag *flag)
+{
+    if (!flag)
+        return;
+
+    dstr_free(&flag->name);
+    dstr_free(&flag->description);
+    dstr_free(&flag->value);
+    free(flag);
+}
+
+CONSTRUCTOR(ArgParser)
+{
+    self->flags = parr_new(NULL, 0);
+    METHOD_LINK(ArgParser, add_flag);
+    METHOD_LINK(ArgParser, add_value_flag);
+    METHOD_LINK(ArgParser, parse);
+    METHOD_LINK(ArgParser, get_bool);
+    METHOD_LINK(ArgParser, get_string);
+    METHOD_LINK(ArgParser, print_flags);
+}
+
+DECONSTRUCTOR(ArgParser)
+{
+    for (size_t i = 0; i < self->flags.len; i++)
+        argflag_free((ArgFlag *)self->flags.data[i]);
+
+    parr_free(&self->flags);
+}
+
+CLASS_INFO_ROOT(ArgParser);
+
+static ArgFlag *argparser_find(ArgParser *this, const char *name)
+{
+    for (size_t i = 0; i < this->flags.len; i++)
+    {
+        ArgFlag *flag = (ArgFlag *)this->flags.data[i];
+        if (flag && flag->name.data && strcmp(flag->name.data, name) == 0)
+            return flag;
+    }
+
+    return NULL;
+}
+
+static void argparser_add(void *self, const char *name, const char *description, bool has_value)
+{
+    ArgParser *this = (ArgParser *)self;
+    ArgFlag *flag = argflag_new(name, description, has_value);
+
+    if (flag)
+        parr_append_val(&this->flags, flag);
+}
+
+IMPLEMENT(ArgParser, void, add_flag,(void *self, const char *name, const char *description))
+{
+    argparser_add(self, name, description, false);
+}
+
+IMPLEMENT(ArgParser, void, add_value_flag, (void *self, const char *name, const char *description))
+{
+    argparser_add(self, name, description, true);
+}
+
+IMPLEMENT(ArgParser, void, parse, (void *self, const parr_t *argv))
+{
+    ArgParser *this = (ArgParser *)self;
+
+    if (!argv)
+        return;
+
+    for (size_t i = 1; i < argv->len; i++)
+    {
+        const char *arg = (const char *)argv->data[i];
+        if (!arg || arg[0] != '-' || arg[1] != '-')
+            continue;
+
+        ArgFlag *flag = argparser_find(this, arg + 2);
+        if (!flag)
+        {
+            printf("Unknown option: %s\n", arg);
+            continue;
+        }
+
+        flag->present = true;
+
+        if (flag->has_value && i + 1 < argv->len)
+        {
+            i++;
+            dstr_free(&flag->value);
+            flag->value = dstr_new((const char *)argv->data[i]);
+        }
+    }
+}
+
+IMPLEMENT(ArgParser, bool, get_bool, (void *self, const char *name))
+{
+    ArgParser *this = (ArgParser *)self;
+    ArgFlag *flag = argparser_find(this, name);
+    return flag ? flag->present : false;
+}
+
+IMPLEMENT(ArgParser, const char *, get_string, (void *self, const char *name, const char *default_value))
+{
+    ArgParser *this = (ArgParser *)self;
+    ArgFlag *flag = argparser_find(this, name);
+
+    if (flag && flag->present && flag->has_value)
+        return flag->value.data;
+
+    return default_value;
+}
+
+IMPLEMENT(ArgParser, void, print_flags, (void *self))
+{
+    ArgParser *this = (ArgParser *)self;
+    size_t max_width = 0;
+
+    for (size_t i = 0; i < this->flags.len; i++)
+    {
+        ArgFlag *flag = (ArgFlag *)this->flags.data[i];
+        if (!flag)
+            continue;
+
+        size_t width = 2;
+        if (flag->name.data)
+            width += flag->name.len;
+        if (flag->has_value)
+            width += 8;
+
+        if (width > max_width)
+            max_width = width;
+    }
+
+    for (size_t i = 0; i < this->flags.len; i++)
+    {
+        ArgFlag *flag = (ArgFlag *)this->flags.data[i];
+        if (!flag)
+            continue;
+
+        dstr_t left = dstr_new("--");
+        if (flag->name.data)
+            dstr_append(&left, flag->name.data);
+        if (flag->has_value)
+            dstr_append(&left, " <value>");
+
+        printf("  %-*s  %s\n",
+               (int)max_width,
+               left.data ? left.data : "",
+               flag->description.data ? flag->description.data : "");
+
+        dstr_free(&left);
+    }
+}
