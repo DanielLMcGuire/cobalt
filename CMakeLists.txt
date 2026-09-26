@@ -9,35 +9,35 @@ add_subdirectory("libxxc")
 set_source_files_properties(main.ppc
     PROPERTIES LANGUAGE C
 )
-add_executable(min main.ppc)
-target_link_libraries(min PRIVATE xxc)
+add_executable(main main.ppc)
+target_link_libraries(main PRIVATE xxc)
 
 if (WIN32)
-    target_link_libraries(min PRIVATE kernel32)
+    target_link_libraries(main PRIVATE kernel32)
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-        target_compile_options(min PRIVATE
+        target_compile_options(main PRIVATE
             -O3
             -ffreestanding
             -fno-builtin
             -fno-stack-protector
             -mno-stack-arg-probe
         )
-        target_link_options(min PRIVATE
+        target_link_options(main PRIVATE
             -O3
             -nostdlib
             "LINKER:/ENTRY:start"
             "LINKER:/SUBSYSTEM:CONSOLE"
         )
     elseif (MSVC)
-        target_compile_options(min PRIVATE
+        target_compile_options(main PRIVATE
             /O2
             /GS-
             /Gs9999999
             /guard:cf-
             /d2CastGuard-
         )
-        target_link_options(min PRIVATE
+        target_link_options(main PRIVATE
             /OPT:REF
             /OPT:ICF
             /GS-
@@ -53,14 +53,14 @@ if (WIN32)
     endif()
 
 elseif (LINUX)
-    target_compile_options(min PRIVATE
+    target_compile_options(main PRIVATE
         -O3
         -flto
         -fno-stack-protector
         -ffreestanding
         -fno-builtin
     )
-    target_link_options(min PRIVATE
+    target_link_options(main PRIVATE
         -O3
         -flto
         -nostdlib
