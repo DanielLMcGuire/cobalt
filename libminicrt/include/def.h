@@ -134,4 +134,20 @@
 #define INTMAX_MAX INT64_MAX
 #define UINTMAX_MAX UINT64_MAX
 
+#ifndef __func__
+    #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+        // supported
+    #elif defined(__GNUC__) || defined(__clang__)
+        #define __func__ __FUNCTION__
+    #elif defined(_MSC_VER)
+        #if _MSC_VER >= 1900
+            // supported
+        #else
+            #define __func__ __FUNCTION__
+        #endif
+    #else
+        #define __func__ "<unknown>"
+    #endif
+#endif
+
 #endif

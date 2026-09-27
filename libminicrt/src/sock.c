@@ -5,7 +5,7 @@
 #include <sock.h>
 #include <mem.h>
 #include <sio.h>
-#include <lock.h>
+#include <crt_lock.h>
 
 #if defined(__linux__)
 #include "sys_linux.h"
@@ -37,13 +37,13 @@ static i32 *sock_last_error_slot(void)
 {
     long tid = sock_current_tid();
 
-    crt_lock_acquire(&g_sock_tls_lock);
+    __crt_lock_acquire(&g_sock_tls_lock);
 
     for (int i = 0; i < SOCK_TLS_SLOTS; i++)
     {
         if (g_sock_tls[i].tid == tid)
         {
-            crt_lock_release(&g_sock_tls_lock);
+            __crt_lock_release(&g_sock_tls_lock);
             return &g_sock_tls[i].last_error;
         }
     }
@@ -54,12 +54,12 @@ static i32 *sock_last_error_slot(void)
         {
             g_sock_tls[i].tid = tid;
             g_sock_tls[i].last_error = 0;
-            crt_lock_release(&g_sock_tls_lock);
+            __crt_lock_release(&g_sock_tls_lock);
             return &g_sock_tls[i].last_error;
         }
     }
 
-    crt_lock_release(&g_sock_tls_lock);
+    __crt_lock_release(&g_sock_tls_lock);
     return &g_sock_tls[0].last_error;
 }
 

@@ -37,7 +37,7 @@ IMPLEMENT(MemoryStream, i64, read, (void *self, void *buf, size_t n))
     MemoryStream *this = (MemoryStream *)self;
     i64 result = 0;
 
-    crt_lock_acquire(&this->base.lock);
+    __crt_lock_acquire(&this->base.lock);
 
     if (!buf || n == 0 || this->position >= this->size) goto done;
 
@@ -49,7 +49,7 @@ IMPLEMENT(MemoryStream, i64, read, (void *self, void *buf, size_t n))
     result = (i64)to_read;
 
 done:
-    crt_lock_release(&this->base.lock);
+    __crt_lock_release(&this->base.lock);
     return result;
 }
 
@@ -58,7 +58,7 @@ IMPLEMENT(MemoryStream, i64, write, (void *self, const void *buf, size_t n))
     MemoryStream *this = (MemoryStream *)self;
     i64 result = 0;
 
-    crt_lock_acquire(&this->base.lock);
+    __crt_lock_acquire(&this->base.lock);
 
     if (!buf || n == 0) goto done;
 
@@ -86,7 +86,7 @@ IMPLEMENT(MemoryStream, i64, write, (void *self, const void *buf, size_t n))
     result = (i64)n;
 
 done:
-    crt_lock_release(&this->base.lock);
+    __crt_lock_release(&this->base.lock);
     return result;
 }
 
@@ -96,7 +96,7 @@ IMPLEMENT(MemoryStream, i64, seek, (void *self, i64 offset, int whence))
     i64 result = -1;
     i64 new_pos = -1;
 
-    crt_lock_acquire(&this->base.lock);
+    __crt_lock_acquire(&this->base.lock);
 
     switch (whence) {
         case FS_SEEK_SET: new_pos = offset; break;
@@ -109,32 +109,32 @@ IMPLEMENT(MemoryStream, i64, seek, (void *self, i64 offset, int whence))
         result = new_pos;
     }
 
-    crt_lock_release(&this->base.lock);
+    __crt_lock_release(&this->base.lock);
     return result;
 }
 
 IMPLEMENT(MemoryStream, i64, tell, (void *self))
 {
     MemoryStream *this = (MemoryStream *)self;
-    crt_lock_acquire(&this->base.lock);
+    __crt_lock_acquire(&this->base.lock);
     i64 result = (i64)this->position;
-    crt_lock_release(&this->base.lock);
+    __crt_lock_release(&this->base.lock);
     return result;
 }
 
 IMPLEMENT(MemoryStream, int, eof, (void *self))
 {
     MemoryStream *this = (MemoryStream *)self;
-    crt_lock_acquire(&this->base.lock);
+    __crt_lock_acquire(&this->base.lock);
     int result = (this->position >= this->size) ? 1 : 0;
-    crt_lock_release(&this->base.lock);
+    __crt_lock_release(&this->base.lock);
     return result;
 }
 
 IMPLEMENT(MemoryStream, void, close, (void *self))
 {
     MemoryStream *this = (MemoryStream *)self;
-    crt_lock_acquire(&this->base.lock);
+    __crt_lock_acquire(&this->base.lock);
 
     if (this->buffer) {
         free(this->buffer);
@@ -144,7 +144,7 @@ IMPLEMENT(MemoryStream, void, close, (void *self))
     this->capacity = 0;
     this->position = 0;
 
-    crt_lock_release(&this->base.lock);
+    __crt_lock_release(&this->base.lock);
 }
 
 const char *mstream_get_buffer(MemoryStream *mstream)

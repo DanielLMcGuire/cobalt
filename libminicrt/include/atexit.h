@@ -12,8 +12,10 @@
 
 typedef void (*atexit_func_t)(void);
 
-int atexit(atexit_func_t func);
-
+int  atexit(atexit_func_t func);
 void exit(int status);
+
+void _exit(int status);
+static inline void _Exit(int status) { _exit(status); }
 
 #endif /* ATEXIT_H */

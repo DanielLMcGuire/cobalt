@@ -8,7 +8,7 @@
 #include <parr.h>
 #include <str.h>
 #include <def.h>
-#include <lock.h>
+#include <crt_lock.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -110,9 +110,9 @@ int print(const char *str, unsigned int stream)
 {
     crt_lock_t *lock = sio_lock_for(stream);
 
-    crt_lock_acquire(lock);
+    __crt_lock_acquire(lock);
     int r = raw_print(str, stream);
-    crt_lock_release(lock);
+    __crt_lock_release(lock);
 
     return r;
 }
@@ -121,9 +121,9 @@ int putchar(int c, unsigned int stream)
 {
     crt_lock_t *lock = sio_lock_for(stream);
 
-    crt_lock_acquire(lock);
+    __crt_lock_acquire(lock);
     int r = raw_putchar(c, stream);
-    crt_lock_release(lock);
+    __crt_lock_release(lock);
 
     return r;
 }
@@ -173,14 +173,14 @@ int puts(const char *str, unsigned int stream)
 {
     crt_lock_t *lock = sio_lock_for(stream);
 
-    crt_lock_acquire(lock);
+    __crt_lock_acquire(lock);
 
     int r = raw_print(str, stream);
 
     if (r == 1)
         r = raw_putchar('\n', stream);
 
-    crt_lock_release(lock);
+    __crt_lock_release(lock);
 
     return r;
 }

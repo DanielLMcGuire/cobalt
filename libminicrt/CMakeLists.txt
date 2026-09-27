@@ -19,6 +19,9 @@ if (NOT TARGET minicrt)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sock.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/sock.h
 
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/mutex.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/mutex.h
+
         ${CMAKE_CURRENT_SOURCE_DIR}/src/dstr.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/dstr.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/iarr.c
@@ -40,6 +43,10 @@ if (NOT TARGET minicrt)
 
     target_include_directories(minicrt PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    )
+
+    target_include_directories(minicrt PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/internal>
     )
 
     target_compile_definitions(minicrt PUBLIC

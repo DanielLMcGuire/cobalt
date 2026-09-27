@@ -2,13 +2,13 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#ifndef Stream_H
-#define Stream_H
+#ifndef STREAM_H
+#define STREAM_H
 
 #include <def.h>
 #include <class.pph>
 #include <dstr.h>
-#include <lock.h>
+#include <crt_lock.h>
 
 #define FS_SEEK_SET 0
 #define FS_SEEK_CUR 1
