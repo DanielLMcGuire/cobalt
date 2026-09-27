@@ -31,7 +31,6 @@ static dstr_t fs_path_to_str(FSPath *self) {
         }
     }
 #else
-    dstr_append(&result, "/");
     for (size_t i = 0; i < self->dsData.len; i++) {
         dstr_append(&result, ((dstr_t*)self->dsData.data[i])->data);
         if (i < self->dsData.len - 1) dstr_append(&result, "/");
@@ -46,22 +45,23 @@ static void fs_path_split(FSPath *self, const char *path) {
     const char *curr = path;
     while (*curr) {
 #if defined(_WIN32)
-        char delim = '\\';
         if (*curr == ':') curr++;
-#else
-        char delim = '/';
 #endif
-        if (*curr == delim) {
+
+        if (*curr == '/' || *curr == '\\') {
             curr++;
             continue;
         }
 
         const char *start = curr;
-        while (*curr && *curr != delim) curr++;
+        while (*curr && *curr != '/' && *curr != '\\') {
+            curr++;
+        }
         
         size_t len = curr - start;
         if (len > 0) {
             char temp[256];
+            if (len >= 256) len = 255;
             memcpy(temp, start, len);
             temp[len] = '\0';
             

@@ -1,6 +1,6 @@
 #include <mio.pph>
 #include <def.h>
-#include <memory.h>
+#include <mem.h>
 
 IMPLEMENT(MemoryStream, i64, read, (void *self, void *buf, size_t n))
 {

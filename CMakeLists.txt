@@ -14,6 +14,7 @@ set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(XXC_BUILD_DEMO "Build the ++C demo executable" ${PROJECT_IS_TOP_LEVEL})
+option(XXC_BUILD_TEST "Build the ++C test executable" ${PROJECT_IS_TOP_LEVEL})
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CompileOptions.cmake")
 
@@ -30,4 +31,15 @@ if (XXC_BUILD_DEMO)
 
     xxc_freestanding_compile_options(xxc_demo PRIVATE)
     xxc_freestanding_link_options(xxc_demo)
+endif()
+
+if (XXC_BUILD_TEST)
+    set_source_files_properties(test/test.ppc PROPERTIES LANGUAGE C)
+
+    add_executable(xxc_test test/test.ppc)
+    set_target_properties(xxc_test PROPERTIES OUTPUT_NAME test)
+    target_link_libraries(xxc_test PRIVATE xxc::xxc)
+
+    xxc_freestanding_compile_options(xxc_test PRIVATE)
+    xxc_freestanding_link_options(xxc_test)
 endif()

@@ -1,0 +1,206 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#include <def.h>
+#include <sio.h>
+#include <str.h>
+#include <dstr.h>
+#include <iarr.h>
+#include <parr.h>
+#include <class.pph>
+#include <mio.pph>
+#include <fs_path.pph>
+#include "test.pph"
+
+static int g_tests_run = 0;
+static int g_tests_passed = 0;
+
+CLASS(Animal)
+{
+    METHOD(const char*, speak, (void *self))
+};
+CLASS_EXPORT(Animal);
+const char* METHOD_DECL(Animal, speak)(void *self);
+CLASS_INFO_ROOT(Animal);
+
+CONSTRUCTOR(Animal) {
+    METHOD_LINK(Animal, speak);
+}
+DECONSTRUCTOR(Animal) {}
+
+IMPLEMENT(Animal, const char*, speak, (void *self)) {
+    (void)self;
+    return "...";
+}
+
+CLASS(Dog, Animal)
+{
+    BASE(Animal)
+};
+CLASS_EXPORT(Dog);
+const char* METHOD_DECL(Dog, speak)(void *self);
+CLASS_INFO(Dog, Animal);
+
+CONSTRUCTOR(Dog) {
+    SUPER_CTOR(self, Animal);
+    METHOD_LINK(base, Dog, speak); 
+}
+DECONSTRUCTOR(Dog) {
+    SUPER_DTOR(self, Animal);
+}
+
+IMPLEMENT(Dog, const char*, speak, (void *self)) {
+    (void)self;
+    return "Woof!";
+}
+
+static bool test_dstr(void)
+{
+    dstr_t s = dstr_new("Hello");
+    ASSERT(s.len == 5);
+    
+    dstr_append(&s, " World");
+    ASSERT_STR_EQ(s.data, "Hello World");
+    ASSERT(s.len == 11);
+    
+    dstr_append_int(&s, 42);
+    ASSERT_STR_EQ(s.data, "Hello World42");
+    
+    dstr_free(&s);
+    ASSERT(s.data == NULL);
+    return true;
+}
+
+static bool test_iarr(void)
+{
+    iarr_t arr = iarr_new(NULL, 0);
+    
+    for (int i = 0; i < 100; i++) {
+        iarr_append_val(&arr, i);
+    }
+    
+    ASSERT(arr.len == 100);
+    ASSERT(arr.cap >= 100);
+    ASSERT(arr.data[50] == 50);
+    ASSERT(arr.data[99] == 99);
+    
+    iarr_free(&arr);
+    ASSERT(arr.data == NULL);
+    return true;
+}
+
+static bool test_parr(void)
+{
+    parr_t arr = parr_new(NULL, 0);
+    
+    char* a = "Item A";
+    char* b = "Item B";
+    
+    parr_append_val(&arr, a);
+    parr_append_val(&arr, b);
+    
+    ASSERT(arr.len == 2);
+    ASSERT_STR_EQ((const char*)arr.data[0], "Item A");
+    ASSERT_STR_EQ((const char*)arr.data[1], "Item B");
+    
+    parr_free(&arr);
+    return true;
+}
+
+static bool test_formatting(void)
+{
+    char buf[128];
+    
+    snprintf(buf, sizeof(buf), "%d %x", 255, 255);
+    ASSERT_STR_EQ(buf, "255 ff");
+    
+    snprintf(buf, sizeof(buf), "[%s] %p", "test", (void*)0xDEADBEEF);
+    ASSERT(buf[0] == '[' && buf[1] == 't' && buf[2] == 'e'); 
+
+    snprintf(buf, sizeof(buf), "%04d", 42);
+    ASSERT_STR_EQ(buf, "0042");
+
+    return true;
+}
+
+static bool test_oop_system(void)
+{
+    Dog *dog = NEW(Dog);
+    ASSERT(dog != NULL);
+    
+    Animal *animal = AS(Animal, dog);
+    ASSERT(animal != NULL);
+    
+    const char* sound = CALL0(animal, speak);
+    ASSERT_STR_EQ(sound, "Woof!");
+    
+    IStream *invalid = AS(IStream, dog);
+    ASSERT(invalid == NULL);
+    
+    REMOVE(dog);
+    return true;
+}
+
+static bool test_memory_stream(void)
+{
+    MemoryStream *ms = NEW(MemoryStream);
+    IStream *stream = AS(IStream, ms);
+    
+    const char *msg = "++C Stream Data";
+    i64 written = CALL2(stream, write, msg, strlen(msg));
+    ASSERT(written == (i64)strlen(msg));
+    
+    CALL2(stream, seek, 0, FS_SEEK_SET);
+    
+    char buf[32] = {0};
+    i64 read_bytes = CALL2(stream, read, buf, 3);
+    ASSERT(read_bytes == 3);
+    ASSERT_STR_EQ(buf, "++C");
+    
+    CALL2(stream, seek, 0, FS_SEEK_END);
+    char dummy;
+    CALL2(stream, read, &dummy, 1);
+    ASSERT(CALL0(stream, eof) == 1);
+    
+    REMOVE(ms);
+    return true;
+}
+
+static bool test_fspath(void)
+{
+    dstr_t initial = dstr_new("usr");
+    FSPath *p = fs_path(initial);
+    dstr_free(&initial);
+    
+    CALL1(p, join, "local/bin/app");
+    
+    FSPath *b = CALL0(p, base);
+    dstr_t b_str = CALL0(b, data);
+    ASSERT_STR_EQ(b_str.data, "app");
+    dstr_free(&b_str);
+    
+    REMOVE(b);
+    REMOVE(p);
+    return true;
+}
+
+int program(parr_t csArgs)
+{
+    (void)csArgs;
+    RUN_TEST(test_dstr);
+    RUN_TEST(test_iarr);
+    RUN_TEST(test_parr);
+    RUN_TEST(test_formatting);
+    RUN_TEST(test_oop_system);
+    RUN_TEST(test_memory_stream);
+    RUN_TEST(test_fspath);
+
+    if (g_tests_run == g_tests_passed) {
+        printf(" SUCCESS: All %d tests passed!\n", g_tests_passed);
+        return 0;
+    } else {
+        printf(" FAILURE: %d / %d tests failed.\n", (g_tests_run - g_tests_passed), g_tests_run);
+        return 1;
+    }
+}
