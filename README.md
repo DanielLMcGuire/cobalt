@@ -138,9 +138,8 @@ bool setup_signals(void)
     sigemptyset(&act.sa_mask);
 
     if (sigaction(SIGTERM, &act, &old_act) < 0)
-    {
         return false;
-    }
+
     return true;
 }
 ```
@@ -192,7 +191,7 @@ void fwrite_demo(void)
 
     fwrite(file, "static text.\n");
 
-    CALL0(file, close); REMOVE(file);
+    REMOVE(file);
 }
 ```
 
