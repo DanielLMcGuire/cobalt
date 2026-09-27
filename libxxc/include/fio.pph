@@ -14,7 +14,7 @@
 #define FS_SEEK_CUR 1
 #define FS_SEEK_END 2
 
-CLASS(FileStream)
+CLASS(FileStream, Stream)
 {
     BASE(Stream)
 #if defined(_WIN32)

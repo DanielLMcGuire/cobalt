@@ -9,7 +9,7 @@
 #include <class.pph>
 #include <stream.pph>
 
-CLASS(MemoryStream)
+CLASS(MemoryStream, Stream)
 {
     BASE(Stream)
     FIELD(char *, buffer)
