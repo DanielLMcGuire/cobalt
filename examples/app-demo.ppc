@@ -19,6 +19,20 @@ CLASS(Demo, Application)
 
 CLASS_EXPORT(Demo);
 
+int program(parr_t csArgs)
+{
+    Demo *demo = NEW(Demo);
+    Application *app = AS(Application, demo);
+
+    CALL1(app, parse_args, &csArgs);
+
+    int exit_code = CALL0(app, main);
+
+    REMOVE(demo);
+
+    return exit_code;
+}
+
 METHOD_PROTO(Demo, void, configure_args, (void *self));
 METHOD_PROTO(Demo, int, run, (void *self));
 METHOD_PROTO(Demo, bool, process_args, (void *self));
@@ -81,18 +95,4 @@ IMPLEMENT(Demo, bool, process_args, (void *self))
     if (this->showVersion || this->showAbout) return true;
 
     return true;
-}
-
-int program(parr_t csArgs)
-{
-    Demo *demo = NEW(Demo);
-    Application *app = AS(Application, demo);
-
-    CALL1(app, parse_args, &csArgs);
-
-    int exit_code = CALL0(app, main);
-
-    REMOVE(demo);
-
-    return exit_code;
 }

@@ -15,6 +15,19 @@ CLASS(SocketDemo, Application)
 
 CLASS_EXPORT(SocketDemo);
 
+int program(parr_t csArgs)
+{
+    SocketDemo *demo = NEW(SocketDemo);
+    Application *app = AS(Application, demo);
+
+    CALL1(app, parse_args, &csArgs);
+    int exit_code = CALL0(app, main);
+
+    REMOVE(demo);
+
+    return exit_code;
+}
+
 METHOD_PROTO(SocketDemo, void, configure_args, (void *self));
 METHOD_PROTO(SocketDemo, int, run, (void *self));
 METHOD_PROTO(SocketDemo, void, run_server, (void *self));
@@ -127,17 +140,4 @@ IMPLEMENT(SocketDemo, void, run_client, (void *self))
     CALL2(conn, write, msg, strlen(msg));
 
     REMOVE(conn);
-}
-
-int program(parr_t csArgs)
-{
-    SocketDemo *demo = NEW(SocketDemo);
-    Application *app = AS(Application, demo);
-
-    CALL1(app, parse_args, &csArgs);
-    int exit_code = CALL0(app, main);
-
-    REMOVE(demo);
-
-    return exit_code;
 }
