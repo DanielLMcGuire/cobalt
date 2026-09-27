@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "*.pph": "c",
+    "*.ppc": "c"
+  }
+}
