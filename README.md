@@ -94,14 +94,13 @@ cmake --build build --config Release
 
 ## Features
 
-### Dynamic containers:
+### Dynamic containers
 
 - `parr_t` Pointer array
 - `dstr_t` Dynamic string
 - `iarr_t` Dynamic integer array
 
 ### Signals
-
 
 #### signal
 
@@ -285,20 +284,67 @@ void path_demo(void)
 #include <fs_path.pph>
 #include <sio.h>
 
-void file_ops_demo(void)
+bool file_ops_demo(void)
 {
     dstr_t name = dstr_new("test_file.tmp");
     FSPath *p = fs_path(name);
     dstr_free(&name);
 
     // create an empty file
-    if (CALL0(p, touch))
-        puts("File created successfully.", SIOOUT);
+    if (!CALL0(p, touch)) {
+        REMOVE(p); return false;
+    }
 
     // delete the file
-    if (CALL0(p, remove))
-        puts("File deleted successfully.", SIOOUT);
+    if (CALL0(p, remove)) {
+        REMOVE(p); return false;
+    }
 
     REMOVE(p);
+
+    return true;
+}
+```
+
+### Sockets
+
+```c
+#include <socket.pph>
+#include <sio.h>
+#include <str.h>
+
+static void run_server(void)
+{
+    SocketStream *listener = tcp_listen(SOCK_INADDR_ANY, 8080, 5);
+    if (!listener) return;
+
+    Stream *client = tcp_accept(listener, NULL);
+    if (client) 
+    {
+        CALL2(client, write, "Welcome!\n", 9);
+        
+        char buf[64] = {0};
+        CALL2(client, read, buf, sizeof(buf) - 1);
+        printf("Client says: %s\n", buf);
+        
+        REMOVE(client);
+    }
+    REMOVE(listener);
+}
+
+static void run_client(void)
+{
+    printf("Connecting to 127.0.0.1:8080...\n");
+    
+    Stream *conn = tcp_connect("127.0.0.1", 8080);
+    if (!conn) return;
+
+    char buf[64] = {0};
+    CALL2(conn, read, buf, sizeof(buf) - 1);
+    printf("Server says: %s", buf);
+
+    CALL2(conn, write, "Hello!\n", 7);
+    
+    REMOVE(conn);
 }
 ```

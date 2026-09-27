@@ -23,20 +23,31 @@ add_subdirectory(libminicrt)
 add_subdirectory(libxxc)
 
 if (XXC_BUILD_DEMO)
-    set_source_files_properties(main.ppc PROPERTIES LANGUAGE C)
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/examples/app-demo.ppc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/examples/socket-demo.ppc"
+        PROPERTIES LANGUAGE C
+    )
 
-    add_executable(xxc_demo main.ppc)
-    set_target_properties(xxc_demo PROPERTIES OUTPUT_NAME main)
-    target_link_libraries(xxc_demo PRIVATE xxc::xxc)
+    add_executable(xxc_demo_app "${CMAKE_CURRENT_SOURCE_DIR}/examples/app-demo.ppc")
+    set_target_properties(xxc_demo_app PROPERTIES OUTPUT_NAME app)
+    target_link_libraries(xxc_demo_app PRIVATE xxc::xxc)
 
-    xxc_freestanding_compile_options(xxc_demo PRIVATE)
-    xxc_freestanding_link_options(xxc_demo)
+    xxc_freestanding_compile_options(xxc_demo_app PRIVATE)
+    xxc_freestanding_link_options(xxc_demo_app)
+
+    add_executable(xxc_demo_socket "${CMAKE_CURRENT_SOURCE_DIR}/examples/socket-demo.ppc")
+    set_target_properties(xxc_demo_socket PROPERTIES OUTPUT_NAME socket)
+    target_link_libraries(xxc_demo_socket PRIVATE xxc::xxc)
+
+    xxc_freestanding_compile_options(xxc_demo_socket PRIVATE)
+    xxc_freestanding_link_options(xxc_demo_socket)
 endif()
 
 if (XXC_BUILD_TEST)
-    set_source_files_properties(test/test.ppc PROPERTIES LANGUAGE C)
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/test/test.ppc" PROPERTIES LANGUAGE C)
 
-    add_executable(xxc_test test/test.ppc)
+    add_executable(xxc_test "${CMAKE_CURRENT_SOURCE_DIR}/test/test.ppc")
     set_target_properties(xxc_test PROPERTIES OUTPUT_NAME test)
     target_link_libraries(xxc_test PRIVATE xxc::xxc)
 

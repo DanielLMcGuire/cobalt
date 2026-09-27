@@ -1,0 +1,143 @@
+#include <class.pph>
+#include <app.pph>
+#include <socket.pph>
+#include <sio.h>
+#include <str.h>
+#include <mem.h>
+
+CLASS(SocketDemo, Application)
+{
+    BASE(Application)
+    
+    METHOD(void, run_server, (void *self))
+    METHOD(void, run_client, (void *self))
+};
+
+CLASS_EXPORT(SocketDemo);
+
+METHOD_PROTO(SocketDemo, void, configure_args, (void *self));
+METHOD_PROTO(SocketDemo, int, run, (void *self));
+METHOD_PROTO(SocketDemo, void, run_server, (void *self));
+METHOD_PROTO(SocketDemo, void, run_client, (void *self));
+
+CLASS_INFO(SocketDemo, Application);
+
+CONSTRUCTOR(SocketDemo)
+{
+    SUPER_CTOR(self, Application);
+
+    METHOD_LINK(base, SocketDemo, configure_args);
+    METHOD_LINK(base, SocketDemo, run);
+    
+    METHOD_LINK(SocketDemo, run_server);
+    METHOD_LINK(SocketDemo, run_client);
+}
+
+DECONSTRUCTOR(SocketDemo)
+{
+    SUPER_DTOR(self, Application);
+}
+
+IMPLEMENT(SocketDemo, void, configure_args, (void *self))
+{
+    SocketDemo *this = (SocketDemo *)self;
+    
+    CALL2(this->base.args, add_flag, "server", "Run as a TCP Server");
+    CALL2(this->base.args, add_flag, "client", "Run as a TCP Client");
+}
+
+IMPLEMENT(SocketDemo, int, run, (void *self))
+{
+    SocketDemo *this = (SocketDemo *)self;
+
+    bool is_server = CALL1(this->base.args, get_bool, "server");
+    bool is_client = CALL1(this->base.args, get_bool, "client");
+
+    if (is_server) {
+        this->run_server(self);
+        return 0;
+    } else if (is_client) {
+        this->run_client(self);
+        return 0;
+    }
+
+    printf("Please specify either --server or --client\n");
+    return 1;
+}
+
+IMPLEMENT(SocketDemo, void, run_server, (void *self))
+{
+    (void)self;
+    u16 port = 8080;
+    printf("Starting server on port %d...\n", port);
+
+    SocketStream *listener = tcp_listen(SOCK_INADDR_ANY, port, 5);
+    
+    if (!listener) {
+        printf("Failed to bind/listen on port %d.\n", port);
+        return;
+    }
+
+    printf("Waiting for a connection...\n");
+
+    sock_addr_in_t peer_addr;
+    Stream *client = tcp_accept(listener, &peer_addr);
+
+    if (client) {
+        printf("Client connected!\n");
+
+        const char *msg = "Welcome to the ++C Server!\n";
+        CALL2(client, write, msg, strlen(msg));
+
+        char buf[256] = {0};
+        i64 bytes = CALL2(client, read, buf, sizeof(buf) - 1);
+        
+        if (bytes > 0) {
+            printf("Received from client: %s\n", buf);
+        }
+
+        REMOVE(client);
+    }
+
+    REMOVE(listener);
+}
+
+IMPLEMENT(SocketDemo, void, run_client, (void *self))
+{
+    (void)self;
+    u16 port = 8080;
+    const char* host = "127.0.0.1";
+    
+    printf("Connecting to %s:%d...\n", host, port);
+
+    Stream *conn = tcp_connect(host, port);
+    
+    if (!conn) {
+        printf("Connection failed.\n");
+        return;
+    }
+
+    printf("Connected!\n");
+
+    char buf[256] = {0};
+    CALL2(conn, read, buf, sizeof(buf) - 1);
+    printf("Server says: %s", buf);
+
+    const char *msg = "Hello from ++C Client!\n";
+    CALL2(conn, write, msg, strlen(msg));
+
+    REMOVE(conn);
+}
+
+int program(parr_t csArgs)
+{
+    SocketDemo *demo = NEW(SocketDemo);
+    Application *app = AS(Application, demo);
+
+    CALL1(app, parse_args, &csArgs);
+    int exit_code = CALL0(app, main);
+
+    REMOVE(demo);
+
+    return exit_code;
+}
