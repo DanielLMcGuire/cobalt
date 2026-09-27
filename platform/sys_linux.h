@@ -56,6 +56,7 @@ long sys_futex(int *uaddr, int op, int val, const void *timeout, int *uaddr2, in
 
 long sys_rt_sigaction(int signum, const void *act, void *oldact, size_t sigsetsize);
 long sys_getpid(void);
+long sys_gettid(void);
 long sys_kill(long pid, int sig);
 
 long sys_socket(int domain, int type, int protocol);

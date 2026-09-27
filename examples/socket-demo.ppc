@@ -1,9 +1,12 @@
-#include <class.pph>
-#include <app.pph>
-#include <socket.pph>
 #include <sio.h>
 #include <str.h>
 #include <mem.h>
+#include <sig.h>
+#include <atexit.h>
+
+#include <class.pph>
+#include <app.pph>
+#include <socket.pph>
 
 CLASS(SocketDemo, Application)
 {
@@ -15,15 +18,28 @@ CLASS(SocketDemo, Application)
 
 CLASS_EXPORT(SocketDemo);
 
+static void handle_sigint(int sig)
+{
+    exit(0);
+}
+
+SocketDemo *g_demo = NULL;
+
+void free_demo(void)
+{
+    if (g_demo) REMOVE(g_demo);
+} 
+
 int program(parr_t csArgs)
 {
+    if (signal(SIGINT, handle_sigint) == SIG_ERR)
+        return 1;
     SocketDemo *demo = NEW(SocketDemo);
+    g_demo = demo; atexit(free_demo);
     Application *app = AS(Application, demo);
 
     CALL1(app, parse_args, &csArgs);
     int exit_code = CALL0(app, main);
-
-    REMOVE(demo);
 
     return exit_code;
 }

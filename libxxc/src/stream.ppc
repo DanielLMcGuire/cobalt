@@ -8,6 +8,7 @@ CLASS_INFO_ROOT(Stream);
 
 CONSTRUCTOR(Stream)
 {
+    crt_lock_init(&self->lock);
     METHOD_LINK(Stream, read);
     METHOD_LINK(Stream, write);
     METHOD_LINK(Stream, seek);

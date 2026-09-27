@@ -8,6 +8,7 @@
 #include <parr.h>
 #include <str.h>
 #include <def.h>
+#include <lock.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -19,6 +20,14 @@ static HANDLE g_out = INVALID_HANDLE_VALUE;
 
 #define PRINTF_STACK_BUF_SIZE 1024
 
+static crt_lock_t g_stdout_lock = CRT_LOCK_INIT;
+static crt_lock_t g_stderr_lock = CRT_LOCK_INIT;
+
+static inline crt_lock_t *sio_lock_for(unsigned int stream)
+{
+    return (stream == SIOOUT) ? &g_stdout_lock : &g_stderr_lock;
+}
+
 void init_io(unsigned int out, unsigned int err)
 {
 #ifdef _WIN32
@@ -28,7 +37,7 @@ void init_io(unsigned int out, unsigned int err)
     (void)out; (void)err;
 }
 
-int print(const char *str, unsigned int stream)
+static int raw_print(const char *str, unsigned int stream)
 {
     if (str == NULL) return -1;
 
@@ -63,7 +72,7 @@ int print(const char *str, unsigned int stream)
     return 1;
 }
 
-int putchar(int c, unsigned int stream)
+static int raw_putchar(int c, unsigned int stream)
 {
 #ifdef _WIN32
     HANDLE handle = (stream == SIOOUT) ? g_out :
@@ -95,6 +104,28 @@ int putchar(int c, unsigned int stream)
 #endif
 
     return c;
+}
+
+int print(const char *str, unsigned int stream)
+{
+    crt_lock_t *lock = sio_lock_for(stream);
+
+    crt_lock_acquire(lock);
+    int r = raw_print(str, stream);
+    crt_lock_release(lock);
+
+    return r;
+}
+
+int putchar(int c, unsigned int stream)
+{
+    crt_lock_t *lock = sio_lock_for(stream);
+
+    crt_lock_acquire(lock);
+    int r = raw_putchar(c, stream);
+    crt_lock_release(lock);
+
+    return r;
 }
 
 int vprintf(const char *fmt, va_list args, unsigned int stream)
@@ -140,10 +171,17 @@ int printf(const char *fmt, ...)
 
 int puts(const char *str, unsigned int stream)
 {
-    int r;
-    r = print(str, stream);
-    if (r != 1) return r;
-    r = putchar('\n', stream);
+    crt_lock_t *lock = sio_lock_for(stream);
+
+    crt_lock_acquire(lock);
+
+    int r = raw_print(str, stream);
+
+    if (r == 1)
+        r = raw_putchar('\n', stream);
+
+    crt_lock_release(lock);
+
     return r;
 }
 

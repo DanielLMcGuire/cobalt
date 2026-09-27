@@ -3,6 +3,7 @@
 // Licensed under the MIT License
 
 #include <app.pph>
+#include <fs_path.pph>
 #include <sio.h>
 
 CLASS_INFO_ROOT(Application);
@@ -41,7 +42,20 @@ IMPLEMENT(Application, void, parse_args, (void *self, const parr_t *argv))
 {
     Application *this = (Application *)self;
 
-    this->program = dstr_new((argv && argv->len > 0) ? (const char *)argv->data[0] : "");
+    const char *path = NULL;
+
+    if (argv && argv->len > 0) {
+        path = (const char *)argv->data[0];
+        dstr_t dsPath = dstr_new(path);
+        FSPath *fPath = fs_path(dsPath);
+        dstr_free(&dsPath);
+        FSPath *fParent = CALL0(fPath, base);
+        REMOVE(fPath);
+        this->program = dstr_new(CALL0(fParent, data).data);
+        REMOVE(fParent);
+    } else {
+        this->program = dstr_new("app");
+    }
 
     CALL2(this->args, add_flag, "help", "Show this help message and exit");
 

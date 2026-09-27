@@ -2,6 +2,8 @@
 #include <dstr.h>
 #include <sio.h>
 #include <str.h>
+#include <signal.h>
+#include <atexit.h>
 
 #include <class.pph>
 #include <app.pph>
@@ -19,9 +21,24 @@ CLASS(Demo, Application)
 
 CLASS_EXPORT(Demo);
 
+static void handle_sigint(int sig)
+{
+    exit(0);
+}
+
+Demo *g_demo = NULL;
+
+void free_demo(void)
+{
+    if (g_demo) REMOVE(g_demo);
+} 
+
 int program(parr_t csArgs)
 {
+    if (signal(SIGINT, handle_sigint) == SIG_ERR)
+        return 1;
     Demo *demo = NEW(Demo);
+    atexit(free_demo);
     Application *app = AS(Application, demo);
 
     CALL1(app, parse_args, &csArgs);

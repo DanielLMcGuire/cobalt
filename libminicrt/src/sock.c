@@ -5,16 +5,72 @@
 #include <sock.h>
 #include <mem.h>
 #include <sio.h>
+#include <lock.h>
 
 #if defined(__linux__)
 #include "sys_linux.h"
 #endif
 
-static i32 g_sock_last_error = 0;
+#define SOCK_TLS_SLOTS 64
+
+typedef struct {
+    long tid;
+    i32  last_error;
+} sock_tls_slot_t;
+
+static sock_tls_slot_t g_sock_tls[SOCK_TLS_SLOTS];
+static crt_lock_t g_sock_tls_lock = CRT_LOCK_INIT;
+
+static long sock_current_tid(void)
+{
+#if defined(_WIN32)
+    return (long)GetCurrentThreadId();
+#elif defined(__linux__)
+    long tid = sys_gettid();
+    return (tid != 0) ? tid : -1;
+#else
+    return 1;
+#endif
+}
+
+static i32 *sock_last_error_slot(void)
+{
+    long tid = sock_current_tid();
+
+    crt_lock_acquire(&g_sock_tls_lock);
+
+    for (int i = 0; i < SOCK_TLS_SLOTS; i++)
+    {
+        if (g_sock_tls[i].tid == tid)
+        {
+            crt_lock_release(&g_sock_tls_lock);
+            return &g_sock_tls[i].last_error;
+        }
+    }
+
+    for (int i = 0; i < SOCK_TLS_SLOTS; i++)
+    {
+        if (g_sock_tls[i].tid == 0)
+        {
+            g_sock_tls[i].tid = tid;
+            g_sock_tls[i].last_error = 0;
+            crt_lock_release(&g_sock_tls_lock);
+            return &g_sock_tls[i].last_error;
+        }
+    }
+
+    crt_lock_release(&g_sock_tls_lock);
+    return &g_sock_tls[0].last_error;
+}
+
+static void sock_set_last_error(i32 err)
+{
+    *sock_last_error_slot() = err;
+}
 
 i32 sock_last_error(void)
 {
-    return g_sock_last_error;
+    return *sock_last_error_slot();
 }
 
 sock_addr_in_t sock_make_addr(u32 addr_host_order, u16 port_host_order)
@@ -136,7 +192,7 @@ bool sock_init(void)
 
     if (r != 0)
     {
-        g_sock_last_error = r;
+        sock_set_last_error(r);
         return false;
     }
 
@@ -154,7 +210,7 @@ sock_t sock_socket(int domain, int type, int protocol)
 
     if (s == INVALID_SOCKET)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return SOCK_INVALID;
     }
 
@@ -165,7 +221,7 @@ i32 sock_bind(sock_t s, const sock_addr_in_t *addr)
 {
     if (bind(s, (const struct sockaddr *)addr, (int)sizeof(*addr)) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -176,7 +232,7 @@ i32 sock_listen(sock_t s, i32 backlog)
 {
     if (listen(s, (int)backlog) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -191,7 +247,7 @@ sock_t sock_accept(sock_t s, sock_addr_in_t *out_addr)
 
     if (c == INVALID_SOCKET)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return SOCK_INVALID;
     }
 
@@ -202,7 +258,7 @@ i32 sock_connect(sock_t s, const sock_addr_in_t *addr)
 {
     if (connect(s, (const struct sockaddr *)addr, (int)sizeof(*addr)) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -215,7 +271,7 @@ i64 sock_send(sock_t s, const void *buf, size_t len, i32 flags)
 
     if (r == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -228,7 +284,7 @@ i64 sock_recv(sock_t s, void *buf, size_t len, i32 flags)
 
     if (r == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -241,7 +297,7 @@ i64 sock_sendto(sock_t s, const void *buf, size_t len, i32 flags, const sock_add
 
     if (r == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -258,7 +314,7 @@ i64 sock_recvfrom(sock_t s, void *buf, size_t len, i32 flags, sock_addr_in_t *ou
 
     if (r == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -269,7 +325,7 @@ i32 sock_setsockopt(sock_t s, i32 level, i32 optname, const void *optval, sock_l
 {
     if (setsockopt(s, (int)level, (int)optname, (const char *)optval, (int)optlen) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -282,7 +338,7 @@ i32 sock_getsockopt(sock_t s, i32 level, i32 optname, void *optval, sock_len_t *
 
     if (getsockopt(s, (int)level, (int)optname, (char *)optval, &len) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -298,7 +354,7 @@ i32 sock_getsockname(sock_t s, sock_addr_in_t *out_addr)
 
     if (getsockname(s, (struct sockaddr *)out_addr, &addrlen) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -311,7 +367,7 @@ i32 sock_getpeername(sock_t s, sock_addr_in_t *out_addr)
 
     if (getpeername(s, (struct sockaddr *)out_addr, &addrlen) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -322,7 +378,7 @@ i32 sock_shutdown(sock_t s, i32 how)
 {
     if (shutdown(s, (int)how) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -333,7 +389,7 @@ i32 sock_close(sock_t s)
 {
     if (closesocket(s) == SOCKET_ERROR)
     {
-        g_sock_last_error = WSAGetLastError();
+        sock_set_last_error(WSAGetLastError());
         return -1;
     }
 
@@ -357,7 +413,7 @@ sock_t sock_socket(int domain, int type, int protocol)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return SOCK_INVALID;
     }
 
@@ -370,7 +426,7 @@ i32 sock_bind(sock_t s, const sock_addr_in_t *addr)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -383,7 +439,7 @@ i32 sock_listen(sock_t s, i32 backlog)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -398,7 +454,7 @@ sock_t sock_accept(sock_t s, sock_addr_in_t *out_addr)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return SOCK_INVALID;
     }
 
@@ -411,7 +467,7 @@ i32 sock_connect(sock_t s, const sock_addr_in_t *addr)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -424,7 +480,7 @@ i64 sock_send(sock_t s, const void *buf, size_t len, i32 flags)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -437,7 +493,7 @@ i64 sock_recv(sock_t s, void *buf, size_t len, i32 flags)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -450,7 +506,7 @@ i64 sock_sendto(sock_t s, const void *buf, size_t len, i32 flags, const sock_add
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -465,7 +521,7 @@ i64 sock_recvfrom(sock_t s, void *buf, size_t len, i32 flags, sock_addr_in_t *ou
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -478,7 +534,7 @@ i32 sock_setsockopt(sock_t s, i32 level, i32 optname, const void *optval, sock_l
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -493,7 +549,7 @@ i32 sock_getsockopt(sock_t s, i32 level, i32 optname, void *optval, sock_len_t *
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -511,7 +567,7 @@ i32 sock_getsockname(sock_t s, sock_addr_in_t *out_addr)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -526,7 +582,7 @@ i32 sock_getpeername(sock_t s, sock_addr_in_t *out_addr)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -539,7 +595,7 @@ i32 sock_shutdown(sock_t s, i32 how)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 
@@ -552,7 +608,7 @@ i32 sock_close(sock_t s)
 
     if (r < 0)
     {
-        g_sock_last_error = (i32)(-r);
+        sock_set_last_error((i32)(-r));
         return -1;
     }
 

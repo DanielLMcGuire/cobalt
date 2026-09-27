@@ -198,29 +198,34 @@ static inline int c_is_a(
 #define IS_A(object, Type) \
     c_is_a((object), &Type##__Class)
 
-#ifndef NDEBUG // DEBUG 
 #define CALL0(object, method) \
     ((object)->method((void *)(object)))
-#else
-#define CALL0(object, method) \
-    ((object)->method((void *)(object))) 
-#endif
 
-#ifndef NDEBUG // DEBUG 
 #define CALL1(object, method, a) \
     ((object)->method((void *)(object), (a)))
-#else
-#define CALL1(object, method, a) \
-    ((object)->method((void *)(object), (a)))
-#endif
 
-#ifndef NDEBUG // DEBUG 
 #define CALL2(object, method, a, b) \
     ((object)->method((void *)(object), (a), (b)))
-#else
-#define CALL2(object, method, a, b) \
-    ((object)->method((void *)(object), (a), (b)))
-#endif
+
+#define CALL3(object, method, a, b, c) \
+    ((object)->method((void *)(object), (a), (b), (c)))
+
+#define CALL4(object, method, a, b, c, d) \
+    ((object)->method((void *)(object), (a), (b), (c), (d)))
+
+#define CALL5(object, method, a, b, c, d, e) \
+    ((object)->method((void *)(object), (a), (b), (c), (d), (e)))
+
+#define CALL6(object, method, a, b, c, d, e, f) \
+    ((object)->method((void *)(object), (a), (b), (c), (d), (e), (f)))
+
+#define CALL7(object, method, a, b, c, d, e, f, g) \
+    ((object)->method((void *)(object), (a), (b), (c), (d), (e), (f), (g)))
+
+#define CALL8(object, method, a, b, c, d, e, f, g, h) \
+    ((object)->method((void *)(object), (a), (b), (c), (d), (e), (f), (g), (h)))
+
+// WHAT? You need more than 8 arguments? Use a struct at this point...
 
 #define __CMETHOD_FMT(Type, method) \
     Type##__##method

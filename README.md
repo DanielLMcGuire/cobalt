@@ -295,7 +295,7 @@ bool file_ops_demo(void)
     }
 
     // delete the file
-    if (CALL0(p, remove)) {
+    if (!CALL0(p, remove)) {
         REMOVE(p); return false;
     }
 

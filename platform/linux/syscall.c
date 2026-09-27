@@ -28,6 +28,13 @@ long sys_rt_sigaction(int signum, const void *act, void *oldact, size_t sigsetsi
 long sys_getpid(void) {
     return syscall(__NR_getpid);
 }
+long sys_gettid(void) {
+#if defined(__NR_gettid)
+    return syscall(__NR_gettid);
+#else
+    return syscall(__NR_getpid);
+#endif
+}
 long sys_kill(long pid, int sig) {
     return syscall(__NR_kill, pid, (long)sig);
 }

@@ -62,227 +62,150 @@ DECONSTRUCTOR(FileStream)
 IMPLEMENT(FileStream, i64, read, (void *self, void *buf, size_t n))
 {
     FileStream *this = (FileStream *)self;
+    i64 result = -1;
+
+    crt_lock_acquire(&this->base.lock);
 
 #if defined(_WIN32)
+    if (!this->fd || this->fd == INVALID_HANDLE_VALUE) goto done;
+    if (!buf || n == 0) { result = 0; goto done; }
 
-    if (!this->fd || this->fd == INVALID_HANDLE_VALUE)
-        return -1;
-
-    if (!buf || n == 0)
-        return 0;
-
-    DWORD request = n > (size_t)MAXDWORD
-        ? MAXDWORD
-        : (DWORD)n;
-
+    DWORD request = n > (size_t)MAXDWORD ? MAXDWORD : (DWORD)n;
     DWORD bytes_read = 0;
 
-    if (!ReadFile(this->fd, buf, request, &bytes_read, NULL))
-    {
+    if (!ReadFile(this->fd, buf, request, &bytes_read, NULL)) {
         DWORD error = GetLastError();
-
-        if (error == ERROR_BROKEN_PIPE || error == ERROR_HANDLE_EOF)
-        {
+        if (error == ERROR_BROKEN_PIPE || error == ERROR_HANDLE_EOF) {
             this->eof_flag = true;
-            return 0;
+            result = 0;
         }
-
-        return -1;
+        goto done;
     }
 
-    if (bytes_read == 0)
-        this->eof_flag = true;
-
-    return (i64)bytes_read;
+    if (bytes_read == 0) this->eof_flag = true;
+    result = (i64)bytes_read;
 
 #elif defined(__linux__)
-
     long r = sys_read(this->fd, buf, n);
-
-    if (r == 0)
-        this->eof_flag = true;
-
-    return r;
-
-#else
-
-    (void)this;
-    (void)buf;
-    (void)n;
-
-    return -1;
-
+    if (r == 0) this->eof_flag = true;
+    result = r;
 #endif
-}
 
+done:
+    crt_lock_release(&this->base.lock);
+    return result;
+}
 
 IMPLEMENT(FileStream, i64, write, (void *self, const void *buf, size_t n))
 {
     FileStream *this = (FileStream *)self;
+    i64 result = -1;
+
+    crt_lock_acquire(&this->base.lock);
 
 #if defined(_WIN32)
+    if (!this->fd || this->fd == INVALID_HANDLE_VALUE) goto done;
+    if (!buf || n == 0) { result = 0; goto done; }
 
-    if (!this->fd || this->fd == INVALID_HANDLE_VALUE)
-        return -1;
-
-    if (!buf || n == 0)
-        return 0;
-
-    DWORD request = n > (size_t)MAXDWORD
-        ? MAXDWORD
-        : (DWORD)n;
-
+    DWORD request = n > (size_t)MAXDWORD ? MAXDWORD : (DWORD)n;
     DWORD bytes_written = 0;
 
-    if (!WriteFile(this->fd, buf, request, &bytes_written, NULL))
-        return -1;
-
-    return (i64)bytes_written;
+    if (WriteFile(this->fd, buf, request, &bytes_written, NULL))
+        result = (i64)bytes_written;
 
 #elif defined(__linux__)
-
-    return sys_write(this->fd, buf, n);
-
-#else
-
-    (void)this;
-    (void)buf;
-    (void)n;
-
-    return -1;
-
+    result = sys_write(this->fd, buf, n);
 #endif
-}
 
+done:
+    crt_lock_release(&this->base.lock);
+    return result;
+}
 
 IMPLEMENT(FileStream, i64, seek, (void *self, i64 offset, int whence))
 {
     FileStream *this = (FileStream *)self;
+    i64 result = -1;
+
+    crt_lock_acquire(&this->base.lock);
 
 #if defined(_WIN32)
-
-    if (!this->fd || this->fd == INVALID_HANDLE_VALUE)
-        return -1;
-
+    if (!this->fd || this->fd == INVALID_HANDLE_VALUE) goto done;
     DWORD method;
-
-    switch (whence)
-    {
-        case FS_SEEK_SET:
-            method = FILE_BEGIN;
-            break;
-
-        case FS_SEEK_CUR:
-            method = FILE_CURRENT;
-            break;
-
-        case FS_SEEK_END:
-            method = FILE_END;
-            break;
-
-        default:
-            return -1;
+    switch (whence) {
+        case FS_SEEK_SET: method = FILE_BEGIN; break;
+        case FS_SEEK_CUR: method = FILE_CURRENT; break;
+        case FS_SEEK_END: method = FILE_END; break;
+        default: goto done;
     }
 
-    LARGE_INTEGER distance;
-    LARGE_INTEGER position;
-
+    LARGE_INTEGER distance, position;
     distance.QuadPart = offset;
-
-    if (!SetFilePointerEx(this->fd, distance, &position, method))
-        return -1;
-
-    this->eof_flag = false;
-
-    return (i64)position.QuadPart;
+    if (SetFilePointerEx(this->fd, distance, &position, method)) {
+        this->eof_flag = false;
+        result = (i64)position.QuadPart;
+    }
 
 #elif defined(__linux__)
-
     long r = sys_lseek(this->fd, offset, whence);
-
-    if (r >= 0)
-        this->eof_flag = false;
-
-    return r;
-
-#else
-
-    (void)this;
-    (void)offset;
-    (void)whence;
-
-    return -1;
-
+    if (r >= 0) this->eof_flag = false;
+    result = r;
 #endif
-}
 
+done:
+    crt_lock_release(&this->base.lock);
+    return result;
+}
 
 IMPLEMENT(FileStream, i64, tell, (void *self))
 {
     FileStream *this = (FileStream *)self;
+    i64 result = -1;
+
+    crt_lock_acquire(&this->base.lock);
 
 #if defined(_WIN32)
-
-    if (!this->fd || this->fd == INVALID_HANDLE_VALUE)
-        return -1;
-
-    LARGE_INTEGER zero;
-    LARGE_INTEGER position;
-
+    if (!this->fd || this->fd == INVALID_HANDLE_VALUE) goto done;
+    LARGE_INTEGER zero, position;
     zero.QuadPart = 0;
-
-    if (!SetFilePointerEx(this->fd, zero, &position, FILE_CURRENT))
-        return -1;
-
-    return (i64)position.QuadPart;
-
+    if (SetFilePointerEx(this->fd, zero, &position, FILE_CURRENT))
+        result = (i64)position.QuadPart;
 #elif defined(__linux__)
-
-    return sys_lseek(this->fd, 0, FS_SEEK_CUR);
-
-#else
-
-    (void)this;
-
-    return -1;
-
+    result = sys_lseek(this->fd, 0, FS_SEEK_CUR);
 #endif
-}
 
+done:
+    crt_lock_release(&this->base.lock);
+    return result;
+}
 
 IMPLEMENT(FileStream, int, eof, (void *self))
 {
     FileStream *this = (FileStream *)self;
-
-    return this->eof_flag ? 1 : 0;
+    crt_lock_acquire(&this->base.lock);
+    int result = this->eof_flag ? 1 : 0;
+    crt_lock_release(&this->base.lock);
+    return result;
 }
-
 
 IMPLEMENT(FileStream, void, close, (void *self))
 {
     FileStream *this = (FileStream *)self;
+    crt_lock_acquire(&this->base.lock);
 
 #if defined(_WIN32)
-
-    if (this->owns_fd && this->fd && this->fd != INVALID_HANDLE_VALUE)
-    {
+    if (this->owns_fd && this->fd && this->fd != INVALID_HANDLE_VALUE) {
         CloseHandle(this->fd);
         this->fd = INVALID_HANDLE_VALUE;
     }
-
 #elif defined(__linux__)
-
-    if (this->owns_fd && this->fd >= 0)
-    {
+    if (this->owns_fd && this->fd >= 0) {
         sys_close(this->fd);
         this->fd = -1;
     }
-
-#else
-
-    (void)this;
-
 #endif
+
+    crt_lock_release(&this->base.lock);
 }
 
 Stream *fopen(const char *path, const char *mode)
