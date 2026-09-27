@@ -27,7 +27,7 @@ CONSTRUCTOR(Demo)
     SUPER_CTOR(self, Application); // calls the base class constructor
     self->showVersion = false; // initialize fields
     METHOD_LINK(base, Demo, run); // link the methods you need into the class
-    METHOD_LINK(Demo, check_state); // link methods into the class
+    METHOD_LINK(Demo, check_state);
 }
 
 DECONSTRUCTOR(Demo)
@@ -115,7 +115,6 @@ static void handle_sigint(int sig) {
 int program(parr_t csArgs) {
     if (signal(SIGINT, handle_sigint) == SIG_ERR)
         return 1;
-
     // ...
 }
 ```
@@ -160,9 +159,7 @@ static void custom_handler(int sig)
 int program(parr_t csArgs)
 {
     signal(SIGUSR1, custom_handler);
-
     raise(SIGUSR1);
-
     return 0;
 }
 ```
@@ -196,8 +193,7 @@ void fwrite_demo(void)
 
     fwrite(file, "static text.\n");
 
-    CALL0(file, close);
-    REMOVE(file);
+    CALL0(file, close); REMOVE(file);
 }
 ```
 
@@ -280,12 +276,8 @@ void path_demo(void)
     printf("Parent dir: %s\n", parent_str.data);
     printf("filename:    %s\n", base_str.data);
 
-    dstr_free(&parent_str);
-    dstr_free(&base_str);
-
-    REMOVE(parent);
-    REMOVE(base);
-    REMOVE(path);
+    dstr_free(&parent_str); dstr_free(&base_str);
+    REMOVE(parent); REMOVE(base); REMOVE(path);
 }
 ```
 
@@ -301,15 +293,11 @@ void file_ops_demo(void)
 
     // create an empty file
     if (CALL0(p, touch))
-    {
         puts("File created successfully.", SIOOUT);
-    }
 
     // delete the file
     if (CALL0(p, remove))
-    {
         puts("File deleted successfully.", SIOOUT);
-    }
 
     REMOVE(p);
 }
