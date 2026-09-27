@@ -51,7 +51,9 @@ IMPLEMENT(Application, void, parse_args, (void *self, const parr_t *argv))
         dstr_free(&dsPath);
         FSPath *fParent = CALL0(fPath, base);
         REMOVE(fPath);
-        this->program = dstr_new(CALL0(fParent, data).data);
+        dstr_t baseStr = CALL0(fParent, data);
+        this->program = dstr_new(baseStr.data);
+        dstr_free(&baseStr);
         REMOVE(fParent);
     } else {
         this->program = dstr_new("app");
