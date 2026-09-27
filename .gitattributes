@@ -1,3 +1,5 @@
+**/*.h linguist-language=C
 **/*.pph linguist-language=C
 **/*.ppc linguist-language=C
 **/*.inl linguist-language=C
+**/*.s linguist-language=Assembly
