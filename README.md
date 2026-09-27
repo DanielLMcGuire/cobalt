@@ -2,7 +2,7 @@
 
 C with "classes"
 
-++C is a CRT and OOP framework for C. It provides "Classes" via macros, and other features expected from a common CRT. It is not C standard compliant. It requires no dependencies (other than kernel32 or Linux syscalls)
+++C is a CRT and OOP framework for C. It provides "Classes" via macros, and other features expected from a common CRT. It is not C standard compliant. It requires no dependencies (other than win32 APIs or Linux syscalls)
 
 ## Usage
 

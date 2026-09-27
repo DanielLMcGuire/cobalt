@@ -57,4 +57,17 @@ long sys_futex(int *uaddr, int op, int val, const void *timeout, int *uaddr2, in
 long sys_rt_sigaction(int signum, const void *act, void *oldact, size_t sigsetsize);
 long sys_getpid(void);
 long sys_kill(long pid, int sig);
+
+long sys_socket(int domain, int type, int protocol);
+long sys_bind(long sockfd, const void *addr, unsigned int addrlen);
+long sys_listen(long sockfd, int backlog);
+long sys_accept4(long sockfd, void *addr, unsigned int *addrlen, int flags);
+long sys_connect(long sockfd, const void *addr, unsigned int addrlen);
+long sys_sendto(long sockfd, const void *buf, size_t len, int flags, const void *dest_addr, unsigned int addrlen);
+long sys_recvfrom(long sockfd, void *buf, size_t len, int flags, void *src_addr, unsigned int *addrlen);
+long sys_shutdown(long sockfd, int how);
+long sys_setsockopt(long sockfd, int level, int optname, const void *optval, unsigned int optlen);
+long sys_getsockopt(long sockfd, int level, int optname, void *optval, unsigned int *optlen);
+long sys_getsockname(long sockfd, void *addr, unsigned int *addrlen);
+long sys_getpeername(long sockfd, void *addr, unsigned int *addrlen);
 #endif /* SYS_LINUX_H */

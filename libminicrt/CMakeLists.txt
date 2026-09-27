@@ -16,6 +16,9 @@ if (NOT TARGET minicrt)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sig.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/sig.h
 
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sock.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/sock.h
+
         ${CMAKE_CURRENT_SOURCE_DIR}/src/dstr.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/dstr.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/iarr.c

@@ -52,6 +52,131 @@ void* sys_mmap(void *addr, size_t length, int prot, int flags, int fd, size_t of
 int sys_munmap(void *addr, size_t length) {
     return (int)syscall(__NR_munmap, (long)addr, (long)length, 0);
 }
+
+#if defined(__i386__) && !defined(__x86_64__) && defined(__NR_socketcall)
+#define XXC_USE_SOCKETCALL 1
+#endif
+
+#if defined(XXC_USE_SOCKETCALL)
+
+#define XXC_SYS_SOCKET      1
+#define XXC_SYS_BIND        2
+#define XXC_SYS_CONNECT     3
+#define XXC_SYS_LISTEN      4
+#define XXC_SYS_ACCEPT      5
+#define XXC_SYS_GETSOCKNAME 6
+#define XXC_SYS_GETPEERNAME 7
+#define XXC_SYS_SEND        9
+#define XXC_SYS_RECV        10
+#define XXC_SYS_SENDTO      11
+#define XXC_SYS_RECVFROM    12
+#define XXC_SYS_SHUTDOWN    13
+#define XXC_SYS_SETSOCKOPT  14
+#define XXC_SYS_GETSOCKOPT  15
+#define XXC_SYS_ACCEPT4     18
+
+static long sys_socketcall(int call, long a0, long a1, long a2, long a3, long a4, long a5) {
+    long args[6];
+    args[0] = a0; args[1] = a1; args[2] = a2;
+    args[3] = a3; args[4] = a4; args[5] = a5;
+    return syscall(__NR_socketcall, (long)call, (long)args);
+}
+
+#endif /* XXC_USE_SOCKETCALL */
+
+long sys_socket(int domain, int type, int protocol) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_SOCKET, domain, type, protocol, 0, 0, 0);
+#else
+    return syscall(__NR_socket, (long)domain, (long)type, (long)protocol);
+#endif
+}
+long sys_bind(long sockfd, const void *addr, unsigned int addrlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_BIND, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
+#else
+    return syscall(__NR_bind, sockfd, (long)addr, (long)addrlen);
+#endif
+}
+long sys_listen(long sockfd, int backlog) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_LISTEN, sockfd, (long)backlog, 0, 0, 0, 0);
+#else
+    return syscall(__NR_listen, sockfd, (long)backlog);
+#endif
+}
+long sys_accept4(long sockfd, void *addr, unsigned int *addrlen, int flags) {
+#if defined(XXC_USE_SOCKETCALL)
+    if (flags != 0)
+        return -38; /* -ENOSYS */
+    return sys_socketcall(XXC_SYS_ACCEPT, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
+#elif defined(__NR_accept4)
+    return syscall(__NR_accept4, sockfd, (long)addr, (long)addrlen, (long)flags);
+#elif defined(__NR_accept)
+    (void)flags;
+    return syscall(__NR_accept, sockfd, (long)addr, (long)addrlen);
+#else
+    (void)sockfd; (void)addr; (void)addrlen; (void)flags;
+    return -38; /* -ENOSYS */
+#endif
+}
+long sys_connect(long sockfd, const void *addr, unsigned int addrlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_CONNECT, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
+#else
+    return syscall(__NR_connect, sockfd, (long)addr, (long)addrlen);
+#endif
+}
+long sys_sendto(long sockfd, const void *buf, size_t len, int flags, const void *dest_addr, unsigned int addrlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_SENDTO, sockfd, (long)buf, (long)len, (long)flags, (long)dest_addr, (long)addrlen);
+#else
+    return syscall(__NR_sendto, sockfd, (long)buf, (long)len, (long)flags, (long)dest_addr, (long)addrlen);
+#endif
+}
+long sys_recvfrom(long sockfd, void *buf, size_t len, int flags, void *src_addr, unsigned int *addrlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_RECVFROM, sockfd, (long)buf, (long)len, (long)flags, (long)src_addr, (long)addrlen);
+#else
+    return syscall(__NR_recvfrom, sockfd, (long)buf, (long)len, (long)flags, (long)src_addr, (long)addrlen);
+#endif
+}
+long sys_shutdown(long sockfd, int how) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_SHUTDOWN, sockfd, (long)how, 0, 0, 0, 0);
+#else
+    return syscall(__NR_shutdown, sockfd, (long)how);
+#endif
+}
+long sys_setsockopt(long sockfd, int level, int optname, const void *optval, unsigned int optlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_SETSOCKOPT, sockfd, (long)level, (long)optname, (long)optval, (long)optlen, 0);
+#else
+    return syscall(__NR_setsockopt, sockfd, (long)level, (long)optname, (long)optval, (long)optlen);
+#endif
+}
+long sys_getsockopt(long sockfd, int level, int optname, void *optval, unsigned int *optlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_GETSOCKOPT, sockfd, (long)level, (long)optname, (long)optval, (long)optlen, 0);
+#else
+    return syscall(__NR_getsockopt, sockfd, (long)level, (long)optname, (long)optval, (long)optlen);
+#endif
+}
+long sys_getsockname(long sockfd, void *addr, unsigned int *addrlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_GETSOCKNAME, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
+#else
+    return syscall(__NR_getsockname, sockfd, (long)addr, (long)addrlen);
+#endif
+}
+long sys_getpeername(long sockfd, void *addr, unsigned int *addrlen) {
+#if defined(XXC_USE_SOCKETCALL)
+    return sys_socketcall(XXC_SYS_GETPEERNAME, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
+#else
+    return syscall(__NR_getpeername, sockfd, (long)addr, (long)addrlen);
+#endif
+}
+
 long sys_futex(int *uaddr, int op, int val, const void *timeout, int *uaddr2, int val3) {
     long ret = -1;
 #if defined(__NR_futex)

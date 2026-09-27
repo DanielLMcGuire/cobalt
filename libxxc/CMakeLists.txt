@@ -6,6 +6,7 @@ if (NOT TARGET xxc)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/fio.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/fs_path.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/mio.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/socket.ppc
     )
     set_source_files_properties(${XXC_SOURCES} PROPERTIES LANGUAGE C)
 

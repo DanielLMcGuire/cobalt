@@ -38,7 +38,7 @@ endfunction()
 
 function(xxc_freestanding_link_options target)
     if (WIN32)
-        target_link_libraries(${target} PRIVATE kernel32)
+        target_link_libraries(${target} PRIVATE kernel32 ws2_32)
 
         if (MSVC)
             target_link_options(${target} PRIVATE
