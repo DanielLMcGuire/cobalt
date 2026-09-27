@@ -41,12 +41,7 @@
 #define SEEK_CUR 1
 #define SEEK_END 2
 
-long __syscall0(long n);
-long __syscall1(long n, long a1);
-long __syscall2(long n, long a1, long a2);
-long __syscall3(long n, long a1, long a2, long a3);
-long __syscall4(long n, long a1, long a2, long a3, long a4);
-long __syscall6(long n, long a1, long a2, long a3, long a4, long a5, long a6);
+long syscall(long number, ...);
 
 long sys_unlink(const char *path);
 long sys_write(int fd, const void *buf, size_t count);

@@ -2,8 +2,8 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#ifndef ISTREAM_H
-#define ISTREAM_H
+#ifndef Stream_H
+#define Stream_H
 
 #include <def.h>
 #include <class.pph>
@@ -13,7 +13,7 @@
 #define FS_SEEK_CUR 1
 #define FS_SEEK_END 2
 
-CLASS(IStream)
+CLASS(Stream)
 {
     METHOD(i64,  read,  (void *self, void *buf, size_t n))
     METHOD(i64,  write, (void *self, const void *buf, size_t n))
@@ -23,6 +23,13 @@ CLASS(IStream)
     METHOD(void, close, (void *self))
 };
 
-CLASS_EXPORT(IStream);
+CLASS_EXPORT(Stream);
 
-#endif /* ISTREAM_H */
+METHOD_PROTO(Stream, i64, read, (void *self, void *buf, size_t n));
+METHOD_PROTO(Stream, i64, write, (void *self, const void *buf, size_t n));
+METHOD_PROTO(Stream, i64, seek, (void *self, i64 offset, int whence));
+METHOD_PROTO(Stream, i64, tell, (void *self));
+METHOD_PROTO(Stream, int, eof, (void *self));
+METHOD_PROTO(Stream, void, close, (void *self));
+
+#endif /* Stream_H */

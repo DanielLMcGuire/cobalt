@@ -11,7 +11,7 @@
 
 CLASS(MemoryStream)
 {
-    BASE(IStream)
+    BASE(Stream)
     FIELD(char *, buffer)
     FIELD(size_t, size)
     FIELD(size_t, capacity)
@@ -19,6 +19,13 @@ CLASS(MemoryStream)
 };
 
 CLASS_EXPORT(MemoryStream);
+
+METHOD_PROTO(MemoryStream, i64, read, (void *self, void *buf, size_t n));
+METHOD_PROTO(MemoryStream, i64, write, (void *self, const void *buf, size_t n));
+METHOD_PROTO(MemoryStream, i64, seek, (void *self, i64 offset, int whence));
+METHOD_PROTO(MemoryStream, i64, tell, (void *self));
+METHOD_PROTO(MemoryStream, int, eof, (void *self));
+METHOD_PROTO(MemoryStream, void, close, (void *self));
 
 const char *mstream_get_buffer(MemoryStream *mstream);
 

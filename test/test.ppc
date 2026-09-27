@@ -135,7 +135,7 @@ static bool test_oop_system(void)
     const char* sound = CALL0(animal, speak);
     ASSERT_STR_EQ(sound, "Woof!");
     
-    IStream *invalid = AS(IStream, dog);
+    Stream *invalid = AS(Stream, dog);
     ASSERT(invalid == NULL);
     
     REMOVE(dog);
@@ -145,7 +145,7 @@ static bool test_oop_system(void)
 static bool test_memory_stream(void)
 {
     MemoryStream *ms = NEW(MemoryStream);
-    IStream *stream = AS(IStream, ms);
+    Stream *stream = AS(Stream, ms);
     
     const char *msg = "++C Stream Data";
     i64 written = CALL2(stream, write, msg, strlen(msg));

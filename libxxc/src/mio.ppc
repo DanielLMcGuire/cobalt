@@ -2,6 +2,36 @@
 #include <def.h>
 #include <mem.h>
 
+CLASS_INFO(MemoryStream, Stream);
+
+CONSTRUCTOR(MemoryStream)
+{
+    SUPER_CTOR(self, Stream);
+
+    self->buffer = NULL;
+    self->size = 0;
+    self->capacity = 0;
+    self->position = 0;
+
+    METHOD_LINK(base, MemoryStream, read);
+    METHOD_LINK(base, MemoryStream, write);
+    METHOD_LINK(base, MemoryStream, seek);
+    METHOD_LINK(base, MemoryStream, tell);
+    METHOD_LINK(base, MemoryStream, eof);
+    METHOD_LINK(base, MemoryStream, close);
+}
+
+DECONSTRUCTOR(MemoryStream)
+{
+    if (self->buffer)
+    {
+        free(self->buffer);
+        self->buffer = NULL;
+    }
+
+    SUPER_DTOR(self, Stream);
+}
+
 IMPLEMENT(MemoryStream, i64, read, (void *self, void *buf, size_t n))
 {
     MemoryStream *this = (MemoryStream *)self;
@@ -110,36 +140,6 @@ IMPLEMENT(MemoryStream, void, close, (void *self))
     this->capacity = 0;
     this->position = 0;
 }
-
-CONSTRUCTOR(MemoryStream)
-{
-    SUPER_CTOR(self, IStream);
-
-    self->buffer = NULL;
-    self->size = 0;
-    self->capacity = 0;
-    self->position = 0;
-
-    METHOD_LINK(base, MemoryStream, read);
-    METHOD_LINK(base, MemoryStream, write);
-    METHOD_LINK(base, MemoryStream, seek);
-    METHOD_LINK(base, MemoryStream, tell);
-    METHOD_LINK(base, MemoryStream, eof);
-    METHOD_LINK(base, MemoryStream, close);
-}
-
-DECONSTRUCTOR(MemoryStream)
-{
-    if (self->buffer)
-    {
-        free(self->buffer);
-        self->buffer = NULL;
-    }
-
-    SUPER_DTOR(self, IStream);
-}
-
-CLASS_INFO(MemoryStream, IStream);
 
 const char *mstream_get_buffer(MemoryStream *mstream)
 {

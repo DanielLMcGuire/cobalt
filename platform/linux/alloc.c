@@ -2,7 +2,6 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-
 #include "../linux_alloc.h"
 
 __linux_arena *__linux_arenas = NULL;

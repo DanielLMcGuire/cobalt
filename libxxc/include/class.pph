@@ -225,9 +225,6 @@ static inline int c_is_a(
 #define __CMETHOD_FMT(Type, method) \
     Type##__##method
 
-#define METHOD_DECL(Type, method) \
-    __CMETHOD_FMT(Type, method)
-
 #define METHOD_LINK_2(Type, method) \
     self->method = __CMETHOD_FMT(Type, method)
 
@@ -243,5 +240,11 @@ static inline int c_is_a(
     extern const Class Type##__Class; \
     CONSTRUCTOR(Type); \
     DECONSTRUCTOR(Type);
+
+#define METHOD_DECL(Type, method) \
+    __CMETHOD_FMT(Type, method)
+
+#define METHOD_PROTO(Type, return_type, name, params) \
+    return_type __CMETHOD_FMT(Type, name) params
 
 #endif

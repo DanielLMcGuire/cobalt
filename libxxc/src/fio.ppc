@@ -15,6 +15,50 @@
 #include <sys_linux.h>
 #endif
 
+CLASS_INFO(FileStream, Stream);
+
+CONSTRUCTOR(FileStream)
+{
+    SUPER_CTOR(self, Stream);
+
+#if defined(_WIN32)
+    self->fd = INVALID_HANDLE_VALUE;
+#else
+    self->fd = -1;
+#endif
+
+    self->owns_fd  = false;
+    self->eof_flag  = false;
+
+    METHOD_LINK(base, FileStream, read);
+    METHOD_LINK(base, FileStream, write);
+    METHOD_LINK(base, FileStream, seek);
+    METHOD_LINK(base, FileStream, tell);
+    METHOD_LINK(base, FileStream, eof);
+    METHOD_LINK(base, FileStream, close);
+}
+
+DECONSTRUCTOR(FileStream)
+{
+#if defined(_WIN32)
+
+    if (self->owns_fd && self->fd && self->fd != INVALID_HANDLE_VALUE)
+        CloseHandle(self->fd);
+
+    self->fd = INVALID_HANDLE_VALUE;
+
+#elif defined(__linux__)
+
+    if (self->owns_fd && self->fd >= 0)
+        sys_close(self->fd);
+
+    self->fd = -1;
+
+#endif
+
+    SUPER_DTOR(self, Stream);
+}
+
 IMPLEMENT(FileStream, i64, read, (void *self, void *buf, size_t n))
 {
     FileStream *this = (FileStream *)self;
@@ -241,55 +285,7 @@ IMPLEMENT(FileStream, void, close, (void *self))
 #endif
 }
 
-
-CONSTRUCTOR(FileStream)
-{
-    SUPER_CTOR(self, IStream);
-
-#if defined(_WIN32)
-    self->fd = INVALID_HANDLE_VALUE;
-#else
-    self->fd = -1;
-#endif
-
-    self->owns_fd  = false;
-    self->eof_flag  = false;
-
-    METHOD_LINK(base, FileStream, read);
-    METHOD_LINK(base, FileStream, write);
-    METHOD_LINK(base, FileStream, seek);
-    METHOD_LINK(base, FileStream, tell);
-    METHOD_LINK(base, FileStream, eof);
-    METHOD_LINK(base, FileStream, close);
-}
-
-
-DECONSTRUCTOR(FileStream)
-{
-#if defined(_WIN32)
-
-    if (self->owns_fd && self->fd && self->fd != INVALID_HANDLE_VALUE)
-        CloseHandle(self->fd);
-
-    self->fd = INVALID_HANDLE_VALUE;
-
-#elif defined(__linux__)
-
-    if (self->owns_fd && self->fd >= 0)
-        sys_close(self->fd);
-
-    self->fd = -1;
-
-#endif
-
-    SUPER_DTOR(self, IStream);
-}
-
-
-CLASS_INFO(FileStream, IStream);
-
-
-IStream *fopen(const char *path, const char *mode)
+Stream *fopen(const char *path, const char *mode)
 {
     if (!path || !mode || !mode[0])
         return NULL;
@@ -354,7 +350,7 @@ IStream *fopen(const char *path, const char *mode)
     fs->owns_fd  = true;
     fs->eof_flag = false;
 
-    return (IStream *)fs;
+    return (Stream *)fs;
 
 #elif defined(__linux__)
 
@@ -406,7 +402,7 @@ IStream *fopen(const char *path, const char *mode)
     fs->owns_fd  = true;
     fs->eof_flag = false;
 
-    return (IStream *)fs;
+    return (Stream *)fs;
 
 #else
 
@@ -458,23 +454,23 @@ void fs_init(void)
 
 #endif
 
-IStream *stdin(void)
+Stream *stdin(void)
 {
-    return (IStream *)g_stdin_stream;
+    return (Stream *)g_stdin_stream;
 }
 
-IStream *stdout(void)
+Stream *stdout(void)
 {
-    return (IStream *)g_stdout_stream;
+    return (Stream *)g_stdout_stream;
 }
 
 
-IStream *stderr(void)
+Stream *stderr(void)
 {
-    return (IStream *)g_stderr_stream;
+    return (Stream *)g_stderr_stream;
 }
 
-i64 fwrite(IStream *s, const char *str)
+i64 fwrite(Stream *s, const char *str)
 {
     if (!s || !str)
         return -1;
@@ -483,7 +479,7 @@ i64 fwrite(IStream *s, const char *str)
 }
 
 
-i64 freadline(IStream *s, dstr_t *out)
+i64 freadline(Stream *s, dstr_t *out)
 {
     if (!s || !out)
         return -1;
@@ -518,7 +514,7 @@ i64 freadline(IStream *s, dstr_t *out)
 }
 
 
-int fprintf(IStream *s, const char *fmt, ...)
+int fprintf(Stream *s, const char *fmt, ...)
 {
     char stack_buf[1024];
 

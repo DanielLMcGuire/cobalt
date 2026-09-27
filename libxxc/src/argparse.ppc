@@ -41,6 +41,8 @@ static void argflag_free(ArgFlag *flag)
     free(flag);
 }
 
+CLASS_INFO_ROOT(ArgParser);
+
 CONSTRUCTOR(ArgParser)
 {
     self->flags = parr_new(NULL, 0);
@@ -59,8 +61,6 @@ DECONSTRUCTOR(ArgParser)
 
     parr_free(&self->flags);
 }
-
-CLASS_INFO_ROOT(ArgParser);
 
 static ArgFlag *argparser_find(ArgParser *this, const char *name)
 {

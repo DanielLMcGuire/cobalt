@@ -16,7 +16,7 @@
 
 CLASS(FileStream)
 {
-    BASE(IStream)
+    BASE(Stream)
 #if defined(_WIN32)
     FIELD(void *, fd)
 #else
@@ -32,14 +32,21 @@ CLASS(FileStream)
 
 CLASS_EXPORT(FileStream);
 
-IStream *fopen(const char *path, const char *mode);
+METHOD_PROTO(FileStream, i64, read, (void *self, void *buf, size_t n));
+METHOD_PROTO(FileStream, i64, write, (void *self, const void *buf, size_t n));
+METHOD_PROTO(FileStream, i64, seek, (void *self, i64 offset, int whence));
+METHOD_PROTO(FileStream, i64, tell, (void *self));
+METHOD_PROTO(FileStream, int, eof, (void *self));
+METHOD_PROTO(FileStream, void, close, (void *self));
 
-IStream *stdin(void);
-IStream *stdout(void);
-IStream *stderr(void);
+Stream *fopen(const char *path, const char *mode);
 
-i64 fwrite(IStream *s, const char *str);
-i64 freadline(IStream *s, dstr_t *out);
-int fprintf(IStream *s, const char *fmt, ...);
+Stream *stdin(void);
+Stream *stdout(void);
+Stream *stderr(void);
+
+i64 fwrite(Stream *s, const char *str);
+i64 freadline(Stream *s, dstr_t *out);
+int fprintf(Stream *s, const char *fmt, ...);
 
 #endif /* FIO_H */

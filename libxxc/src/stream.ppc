@@ -4,7 +4,24 @@
 
 #include <stream.pph>
 
-IMPLEMENT(IStream, i64, read, (void *self, void *buf, size_t n))
+CLASS_INFO_ROOT(Stream);
+
+CONSTRUCTOR(Stream)
+{
+    METHOD_LINK(Stream, read);
+    METHOD_LINK(Stream, write);
+    METHOD_LINK(Stream, seek);
+    METHOD_LINK(Stream, tell);
+    METHOD_LINK(Stream, eof);
+    METHOD_LINK(Stream, close);
+}
+
+DECONSTRUCTOR(Stream)
+{
+    (void)self;
+}
+
+IMPLEMENT(Stream, i64, read, (void *self, void *buf, size_t n))
 {
     (void)self;
     (void)buf;
@@ -13,7 +30,7 @@ IMPLEMENT(IStream, i64, read, (void *self, void *buf, size_t n))
     return -1;
 }
 
-IMPLEMENT(IStream, i64, write, (void *self, const void *buf, size_t n))
+IMPLEMENT(Stream, i64, write, (void *self, const void *buf, size_t n))
 {
     (void)self;
     (void)buf;
@@ -22,7 +39,7 @@ IMPLEMENT(IStream, i64, write, (void *self, const void *buf, size_t n))
     return -1;
 }
 
-IMPLEMENT(IStream, i64, seek, (void *self, i64 offset, int whence))
+IMPLEMENT(Stream, i64, seek, (void *self, i64 offset, int whence))
 {
     (void)self;
     (void)offset;
@@ -31,39 +48,21 @@ IMPLEMENT(IStream, i64, seek, (void *self, i64 offset, int whence))
     return -1;
 }
 
-IMPLEMENT(IStream, i64, tell, (void *self))
+IMPLEMENT(Stream, i64, tell, (void *self))
 {
     (void)self;
 
     return -1;
 }
 
-IMPLEMENT(IStream, int, eof, (void *self))
+IMPLEMENT(Stream, int, eof, (void *self))
 {
     (void)self;
 
     return 1;
 }
 
-IMPLEMENT(IStream, void, close, (void *self))
+IMPLEMENT(Stream, void, close, (void *self))
 {
     (void)self;
 }
-
-
-CONSTRUCTOR(IStream)
-{
-    METHOD_LINK(IStream, read);
-    METHOD_LINK(IStream, write);
-    METHOD_LINK(IStream, seek);
-    METHOD_LINK(IStream, tell);
-    METHOD_LINK(IStream, eof);
-    METHOD_LINK(IStream, close);
-}
-
-DECONSTRUCTOR(IStream)
-{
-    (void)self;
-}
-
-CLASS_INFO_ROOT(IStream);

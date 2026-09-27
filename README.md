@@ -13,9 +13,9 @@ C with "classes"
 #include <app.pph> // base app interface
 #include <sio.h> // simple IO
 
-CLASS(Demo, IApp)
+CLASS(Demo, Application)
 {
-    BASE(IApp) // add base class
+    BASE(Application) // add base class
     FIELD(bool, showVersion)
     METHOD(bool, check_state, (void *self))
 };
@@ -24,7 +24,7 @@ CLASS_EXPORT(Demo); // export the class
 
 CONSTRUCTOR(Demo)
 {
-    SUPER_CTOR(self, IApp); // calls the base class constructor
+    SUPER_CTOR(self, Application); // calls the base class constructor
     self->showVersion = false;
     METHOD_LINK(base, Demo, run); // link the methods you need into the class
     METHOD_LINK(Demo, check_state);
@@ -32,10 +32,10 @@ CONSTRUCTOR(Demo)
 
 DECONSTRUCTOR(Demo)
 {
-    SUPER_DTOR(self, IApp); // calls the base class deconstructor
+    SUPER_DTOR(self, Application); // calls the base class deconstructor
 }
 
-CLASS_INFO(Demo, IApp); // generates the RTTI metadata
+CLASS_INFO(Demo, Application); // generates the RTTI metadata
 
 IMPLEMENT(Demo, int, run, (void *self))
 {
@@ -51,7 +51,7 @@ int program(parr_t csArgs)
     Demo *demo = NEW(Demo);
 
     // RTTI checked cast
-    IApp *app = AS(IApp, demo);
+    Application *app = AS(Application, demo);
 
     // dynamic invoking
     CALL1(app, parse_args, &csArgs);
@@ -184,7 +184,7 @@ signal(SIGINT, SIG_IGN);
 void fwrite_demo(void)
 {
     // "w", "w+", "r", "r+", "a", "a+"
-    IStream *file = fopen("log.txt", "w");
+    Stream *file = fopen("log.txt", "w");
     if (!file)
     {
         puts("Failed to open file for writing.", SIOERR);
@@ -228,7 +228,7 @@ void stdio_demo(void)
 void memory_stream_demo(void)
 {
     MemoryStream *ms = NEW(MemoryStream);
-    IStream *stream = AS(IStream, ms);
+    Stream *stream = AS(Stream, ms);
 
     // write formatted data into memory
     fprintf(stream, "Message: %s (ID: %d)", "MemoryStream Test", 101);

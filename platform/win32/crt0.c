@@ -1,11 +1,11 @@
-extern void* malloc(size_t size);
-extern void free(void *ptr);
-
+// ++C CRT | Platform (win32)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
 
 #define va_start vastart_guard
 #include <windows.h>
 #undef va_start
-#include "../../libminicrt/include/def.h"
+
 #include "commandline.h"
 
 extern void exit(int status);

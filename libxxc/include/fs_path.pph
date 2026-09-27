@@ -25,6 +25,14 @@ CLASS(FSPath)
 
 CLASS_EXPORT(FSPath);
 
+METHOD_PROTO(FSPath, void, join, (void *self, const char *path));
+METHOD_PROTO(FSPath, FSPath *, parent, (void *self));
+METHOD_PROTO(FSPath, FSPath *, base, (void *self));
+METHOD_PROTO(FSPath, FSPath *, relative, (void *self));
+METHOD_PROTO(FSPath, bool, remove, (void *self));
+METHOD_PROTO(FSPath, bool, touch, (void *self));
+METHOD_PROTO(FSPath, dstr_t, data, (void *self));
+
 FSPath *fs_path(dstr_t path);
 
 #endif /* FS_PATH_H */

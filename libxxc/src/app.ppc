@@ -5,41 +5,41 @@
 #include <app.pph>
 #include <sio.h>
 
-CLASS_INFO_ROOT(IApp);
+CLASS_INFO_ROOT(Application);
 
-CONSTRUCTOR(IApp)
+CONSTRUCTOR(Application)
 {
     self->show_help = false;
     self->program = (dstr_t){0};
     self->args = NEW(ArgParser);
 
-    METHOD_LINK(IApp, configure_args);
-    METHOD_LINK(IApp, run);
-    METHOD_LINK(IApp, parse_args);
-    METHOD_LINK(IApp, print_help);
-    METHOD_LINK(IApp, main);
+    METHOD_LINK(Application, configure_args);
+    METHOD_LINK(Application, run);
+    METHOD_LINK(Application, parse_args);
+    METHOD_LINK(Application, print_help);
+    METHOD_LINK(Application, main);
 }
 
-DECONSTRUCTOR(IApp)
+DECONSTRUCTOR(Application)
 {
     REMOVE(self->args);
     dstr_free(&self->program);
 }
 
-IMPLEMENT(IApp, void, configure_args, (void *self))
+IMPLEMENT(Application, void, configure_args, (void *self))
 {
     (void)self;
 }
 
-IMPLEMENT(IApp, int, run, (void *self))
+IMPLEMENT(Application, int, run, (void *self))
 {
     (void)self;
     return 0;
 }
 
-IMPLEMENT(IApp, void, parse_args, (void *self, const parr_t *argv))
+IMPLEMENT(Application, void, parse_args, (void *self, const parr_t *argv))
 {
-    IApp *this = (IApp *)self;
+    Application *this = (Application *)self;
 
     this->program = dstr_new((argv && argv->len > 0) ? (const char *)argv->data[0] : "");
 
@@ -52,18 +52,18 @@ IMPLEMENT(IApp, void, parse_args, (void *self, const parr_t *argv))
     this->show_help = CALL1(this->args, get_bool, "help");
 }
 
-IMPLEMENT(IApp, void, print_help, (void *self))
+IMPLEMENT(Application, void, print_help, (void *self))
 {
-    IApp *this = (IApp *)self;
+    Application *this = (Application *)self;
 
     printf("Usage: %s [OPTIONS...]\n", this->program.data ? this->program.data : "app");
     puts("OPTIONS:", SIOOUT);
     CALL0(this->args, print_flags);
 }
 
-IMPLEMENT(IApp, int, main, (void *self))
+IMPLEMENT(Application, int, main, (void *self))
 {
-    IApp *this = (IApp *)self;
+    Application *this = (Application *)self;
 
     if (this->show_help)
     {

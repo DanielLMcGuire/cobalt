@@ -23,11 +23,11 @@ CLASS(ArgParser)
 
 CLASS_EXPORT(ArgParser);
 
-void METHOD_DECL(ArgParser, add_flag)(void *self, const char *name, const char *description);
-void METHOD_DECL(ArgParser, add_value_flag)(void *self, const char *name, const char *description);
-void METHOD_DECL(ArgParser, parse)(void *self, const parr_t *argv);
-bool METHOD_DECL(ArgParser, get_bool)(void *self, const char *name);
-const char *METHOD_DECL(ArgParser, get_string)(void *self, const char *name, const char *default_value);
-void METHOD_DECL(ArgParser, print_flags)(void *self);
+METHOD_PROTO(ArgParser, void, add_flag, (void *self, const char *name, const char *description));
+METHOD_PROTO(ArgParser, void, add_value_flag, (void *self, const char *name, const char *description));
+METHOD_PROTO(ArgParser, void, parse, (void *self, const parr_t *argv));
+METHOD_PROTO(ArgParser, bool, get_bool, (void *self, const char *name));
+METHOD_PROTO(ArgParser, const char *, get_string, (void *self, const char *name, const char *default_value));
+METHOD_PROTO(ArgParser, void, print_flags, (void *self));
 
 #endif
