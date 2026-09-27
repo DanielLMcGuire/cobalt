@@ -152,14 +152,17 @@ void* malloc(size_t size)
             if ((char *)after < end)
                 after->prev_size = remaining;
         }
+        
+        block->size_flags = needed | 1;
     } else {
         if (previous_free)
             previous_free->next_free = block->next_free;
         else
             __linux_free_list = block->next_free;
+            
+        block->size_flags = block_size | 1; 
     }
 
-    block->size_flags = needed | 1;
     block->next_free = NULL;
 
     __linux_unlock();
@@ -360,6 +363,9 @@ void free(void *ptr)
 #elif defined(__linux__)
 void free(void *ptr)
 {
+    if (!ptr)
+        return;
+
     __linux_lock();
     size_t header = __linux_block_header_size();
 
