@@ -129,6 +129,7 @@ static void emit_float(char *buf, size_t size, size_t *idx,
     for (int i = 0; i < (int)sizeof(digits_buf); i++) digits_buf[i] = '0';
     int d_idx = 0;
     int int_len = 0;
+    long double norm = 0.0L;
 
     if (val == 0.0L)
     {
@@ -137,7 +138,7 @@ static void emit_float(char *buf, size_t size, size_t *idx,
         for (int i = 0; i < precision; i++)
             if (d_idx < (int)sizeof(digits_buf) - 2) digits_buf[d_idx++] = '0';
     } else {
-        long double norm = val;
+        norm = val;
         int exp = get_exp10_and_normalize(&norm);
 
         if (exp < 0)
@@ -178,7 +179,24 @@ static void emit_float(char *buf, size_t size, size_t *idx,
     }
 
     int carry = 0;
-    if (val != 0.0L && d_idx > 0 && digits_buf[d_idx - 1] >= '5') carry = 1;
+    if (val != 0.0L && d_idx > 0)
+    {
+        if (digits_buf[d_idx - 1] > '5')
+        {
+            carry = 1;
+        }
+        else if (digits_buf[d_idx - 1] == '5')
+        {
+            if (norm != 0.0L)
+            {
+                carry = 1;
+            }
+            else if (d_idx > 1 && (digits_buf[d_idx - 2] - '0') % 2 != 0)
+            {
+                carry = 1;
+            }
+        }
+    }
     if (val != 0.0L && d_idx > 0) d_idx--;
 
     for (int i = d_idx - 1; i >= 0 && carry; i--)
@@ -264,7 +282,24 @@ static void emit_float_sci(char *buf, size_t size, size_t *idx,
     }
 
     int carry = 0;
-    if (digits_buf[d_idx - 1] >= '5') carry = 1;
+    if (d_idx > 0)
+    {
+        if (digits_buf[d_idx - 1] > '5')
+        {
+            carry = 1;
+        }
+        else if (digits_buf[d_idx - 1] == '5')
+        {
+            if (val != 0.0L)
+            {
+                carry = 1;
+            }
+            else if (d_idx > 1 && (digits_buf[d_idx - 2] - '0') % 2 != 0)
+            {
+                carry = 1;
+            }
+        }
+    }
     d_idx--;
 
     for (int i = d_idx - 1; i >= 0 && carry; i--)
