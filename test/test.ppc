@@ -11,7 +11,7 @@
 #include <class.pph>
 #include <mio.pph>
 #include <fs_path.pph>
-#include "test.pph"
+#include "test.h"
 
 static int g_tests_run = 0;
 static int g_tests_passed = 0;
@@ -185,6 +185,93 @@ static bool test_fspath(void)
     return true;
 }
 
+bool test_printf_floats()
+{
+    char buf[256];
+
+    snprintf(buf, sizeof(buf), "[%f]", 3.14159);      ASSERT_STR_EQ(buf, "[3.141590]");
+    snprintf(buf, sizeof(buf), "[%.2f]", 3.14159);    ASSERT_STR_EQ(buf, "[3.14]");
+    snprintf(buf, sizeof(buf), "[%10.2f]", 3.14159);  ASSERT_STR_EQ(buf, "[      3.14]");
+    snprintf(buf, sizeof(buf), "[%-10.2f]", 3.14159); ASSERT_STR_EQ(buf, "[3.14      ]");
+    snprintf(buf, sizeof(buf), "[%010.2f]", 3.14159); ASSERT_STR_EQ(buf, "[0000003.14]");
+    snprintf(buf, sizeof(buf), "[%f]", -3.14159);     ASSERT_STR_EQ(buf, "[-3.141590]");
+    snprintf(buf, sizeof(buf), "[%f]", 0.0);          ASSERT_STR_EQ(buf, "[0.000000]");
+    
+    snprintf(buf, sizeof(buf), "[%f]", 0.9999995);    ASSERT_STR_EQ(buf, "[1.000000]");
+    snprintf(buf, sizeof(buf), "[%.0f]", 0.5);        ASSERT_STR_EQ(buf, "[0]"); 
+    snprintf(buf, sizeof(buf), "[%.0f]", 1.5);        ASSERT_STR_EQ(buf, "[2]");
+    snprintf(buf, sizeof(buf), "[%.3f]", 9.9996);     ASSERT_STR_EQ(buf, "[10.000]");
+    snprintf(buf, sizeof(buf), "[%.2f]", 99.995);     ASSERT_STR_EQ(buf, "[100.00]");
+    
+    snprintf(buf, sizeof(buf), "[%e]", 12345.6789);   ASSERT_STR_EQ(buf, "[1.234568e+04]");
+    snprintf(buf, sizeof(buf), "[%.2e]", 12345.6789); ASSERT_STR_EQ(buf, "[1.23e+04]");
+    snprintf(buf, sizeof(buf), "[%g]", 0.0001234);    ASSERT_STR_EQ(buf, "[0.0001234]");
+    snprintf(buf, sizeof(buf), "[%g]", 123456.0);     ASSERT_STR_EQ(buf, "[123456]");
+    snprintf(buf, sizeof(buf), "[%g]", 100.0);        ASSERT_STR_EQ(buf, "[100]");
+
+    return true;
+}
+
+bool test_printf_ints()
+{
+    char buf[256];
+
+    snprintf(buf, sizeof(buf), "[%d]", -42);         ASSERT_STR_EQ(buf, "[-42]");
+    snprintf(buf, sizeof(buf), "[%5d]", -42);        ASSERT_STR_EQ(buf, "[  -42]");
+    snprintf(buf, sizeof(buf), "[%-5d]", -42);       ASSERT_STR_EQ(buf, "[-42  ]");
+    snprintf(buf, sizeof(buf), "[%05d]", -42);       ASSERT_STR_EQ(buf, "[-0042]");
+    
+    snprintf(buf, sizeof(buf), "[%x]", 255);         ASSERT_STR_EQ(buf, "[ff]");
+    snprintf(buf, sizeof(buf), "[%#x]", 255);        ASSERT_STR_EQ(buf, "[0xff]");
+    snprintf(buf, sizeof(buf), "[%o]", 8);           ASSERT_STR_EQ(buf, "[10]");
+    snprintf(buf, sizeof(buf), "[%#o]", 8);          ASSERT_STR_EQ(buf, "[010]");
+    
+    snprintf(buf, sizeof(buf), "[%lld]", -123456789012LL);    ASSERT_STR_EQ(buf, "[-123456789012]");
+    snprintf(buf, sizeof(buf), "[%lld]", -123456789012345LL); ASSERT_STR_EQ(buf, "[-123456789012345]");
+    snprintf(buf, sizeof(buf), "[%zu]", (size_t)42);          ASSERT_STR_EQ(buf, "[42]");
+    
+    snprintf(buf, sizeof(buf), "[%.5d]", 42); ASSERT_STR_EQ(buf, "[00042]");
+    snprintf(buf, sizeof(buf), "[%.0d]", 0);  ASSERT_STR_EQ(buf, "[]");
+
+    return true;
+}
+
+bool test_printf_strings()
+{
+    char buf[256];
+
+    snprintf(buf, sizeof(buf), "[%10s]", "hi");      ASSERT_STR_EQ(buf, "[        hi]");
+    snprintf(buf, sizeof(buf), "[%-10s]", "hi");     ASSERT_STR_EQ(buf, "[hi        ]");
+    snprintf(buf, sizeof(buf), "[%.2s]", "hello");   ASSERT_STR_EQ(buf, "[he]");
+
+    return true;
+}
+
+bool test_snprintf_truncation()
+{
+    char smallc[4];
+
+    int n = snprintf(smallc, sizeof(smallc), "hello world");
+    
+    ASSERT_STR_EQ(smallc, "hel");
+    ASSERT(n == 11);
+
+    return true;
+}
+
+bool test_dstr_edge_cases()
+{
+    dstr_t s = dstr_new("");
+    ASSERT(s.len == 0);
+    
+    dstr_append(&s, "abc");
+    ASSERT_STR_EQ(s.data, "abc");
+    ASSERT(s.len == 3);
+    
+    dstr_free(&s);
+    return true;
+}
+
 int program(parr_t csArgs)
 {
     (void)csArgs;
@@ -195,6 +282,11 @@ int program(parr_t csArgs)
     RUN_TEST(test_oop_system);
     RUN_TEST(test_memory_stream);
     RUN_TEST(test_fspath);
+    RUN_TEST(test_printf_floats);
+    RUN_TEST(test_printf_ints);
+    RUN_TEST(test_printf_strings);
+    RUN_TEST(test_snprintf_truncation);
+    RUN_TEST(test_dstr_edge_cases);
 
     if (g_tests_run == g_tests_passed) {
         printf(" SUCCESS: All %d tests passed!\n", g_tests_passed);
