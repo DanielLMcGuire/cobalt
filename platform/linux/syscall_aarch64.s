@@ -16,3 +16,5 @@ syscall:
     svc #0
     ret
 .size syscall, . - syscall
+
+.section .note.GNU-stack,"",%progbits

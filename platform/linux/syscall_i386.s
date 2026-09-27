@@ -34,3 +34,5 @@ __restore_rt:
     movl $173, %eax
     int $0x80
 .size __restore_rt, . - __restore_rt
+
+.section .note.GNU-stack,"",@progbits

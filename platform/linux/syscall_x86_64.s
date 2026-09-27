@@ -24,3 +24,5 @@ __restore_rt:
     movq $15, %rax
     syscall
 .size __restore_rt, . - __restore_rt
+
+.section .note.GNU-stack,"",@progbits
