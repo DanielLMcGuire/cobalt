@@ -5,12 +5,12 @@
 #include <class.pph>
 #include <app.pph>
 
-CLASS(LeakDemo, Application)
+CLASS(LeakTest, Application)
 {
     BASE(Application)
 };
 
-CLASS_EXPORT(LeakDemo);
+CLASS_EXPORT(LeakTest);
 
 int program(parr_t csArgs)
 {
@@ -21,7 +21,7 @@ int program(parr_t csArgs)
 
     for (int i = 0; i < 200000; i++)
     {
-        LeakDemo *demo = NEW(LeakDemo);
+        LeakTest *demo = NEW(LeakTest);
         Application *app = AS(Application, demo);
         CALL1(app, parse_args, &args);
         REMOVE(demo);
@@ -33,13 +33,13 @@ int program(parr_t csArgs)
     return 0;
 }
 
-CLASS_INFO(LeakDemo, Application);
+CLASS_INFO(LeakTest, Application);
 
-CONSTRUCTOR(LeakDemo)
+CONSTRUCTOR(LeakTest)
 {
     SUPER_CTOR(self, Application);
 }
-DECONSTRUCTOR(LeakDemo)
+DECONSTRUCTOR(LeakTest)
 {
     SUPER_DTOR(self, Application);
 }
