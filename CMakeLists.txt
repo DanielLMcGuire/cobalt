@@ -53,4 +53,11 @@ if (XXC_BUILD_TEST)
 
     xxc_freestanding_compile_options(xxc_test PRIVATE)
     xxc_freestanding_link_options(xxc_test)
+
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/test/leak.ppc" PROPERTIES LANGUAGE C)
+    add_executable(xxc_leak_test "${CMAKE_CURRENT_SOURCE_DIR}/test/leak.ppc")
+    set_target_properties(xxc_leak_test PROPERTIES OUTPUT_NAME leak_test)
+    target_link_libraries(xxc_leak_test PRIVATE xxc::xxc)
+    xxc_freestanding_compile_options(xxc_leak_test PRIVATE)
+    xxc_freestanding_link_options(xxc_leak_test)
 endif()

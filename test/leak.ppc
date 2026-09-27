@@ -1,0 +1,45 @@
+#include <def.h>
+#include <sio.h>
+#include <str.h>
+#include <parr.h>
+#include <class.pph>
+#include <app.pph>
+
+CLASS(LeakDemo, Application)
+{
+    BASE(Application)
+};
+
+CLASS_EXPORT(LeakDemo);
+
+int program(parr_t csArgs)
+{
+    (void)csArgs;
+
+    const char *fakeArgv[] = { "/usr/local/bin/myapp" };
+    parr_t args = parr_new((const void **)fakeArgv, 1);
+
+    for (int i = 0; i < 200000; i++)
+    {
+        LeakDemo *demo = NEW(LeakDemo);
+        Application *app = AS(Application, demo);
+        CALL1(app, parse_args, &args);
+        REMOVE(demo);
+    }
+
+    parr_free(&args);
+
+    printf("leak_test: completed 200000 iterations OK\n");
+    return 0;
+}
+
+CLASS_INFO(LeakDemo, Application);
+
+CONSTRUCTOR(LeakDemo)
+{
+    SUPER_CTOR(self, Application);
+}
+DECONSTRUCTOR(LeakDemo)
+{
+    SUPER_DTOR(self, Application);
+}
