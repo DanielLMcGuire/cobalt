@@ -16,8 +16,8 @@ C with "classes"
 CLASS(Demo, Application)
 {
     BASE(Application) // add base class
-    FIELD(bool, showVersion)
-    METHOD(bool, check_state, (void *self))
+    FIELD(bool, showVersion) // field
+    METHOD(bool, check_state, (void *self)) // method
 };
 
 CLASS_EXPORT(Demo); // export the class
@@ -25,9 +25,9 @@ CLASS_EXPORT(Demo); // export the class
 CONSTRUCTOR(Demo)
 {
     SUPER_CTOR(self, Application); // calls the base class constructor
-    self->showVersion = false;
+    self->showVersion = false; // initialize fields
     METHOD_LINK(base, Demo, run); // link the methods you need into the class
-    METHOD_LINK(Demo, check_state);
+    METHOD_LINK(Demo, check_state); // link methods into the class
 }
 
 DECONSTRUCTOR(Demo)
