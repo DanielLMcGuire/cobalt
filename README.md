@@ -11,7 +11,7 @@ C with "classes"
 ```c
 #include <class.pph> // for classes
 #include <app.pph> // base app interface
-#include <sio.h> // simple IO
+#include <cio.h> // simple IO
 
 CLASS(Demo, Application)
 {
@@ -173,7 +173,7 @@ signal(SIGINT, SIG_IGN);
 #### Files
 
 ```c
-#include <fio.pph>
+#include <files.pph>
 
 void fwrite_demo(void)
 {
@@ -197,7 +197,7 @@ void fwrite_demo(void)
 #### Standard IO
 
 ```c
-#include <fio.pph>
+#include <ios.pph>
 
 void stdio_demo(void)
 {
@@ -214,7 +214,8 @@ void stdio_demo(void)
 #### Memory
 
 ```c
-#include <mio.pph>
+#include <ios.pph>
+#include <mems.pph>
 
 void memory_stream_demo(void)
 {
@@ -240,73 +241,11 @@ void memory_stream_demo(void)
 }
 ```
 
-### Paths
-
-```c
-#include <fs_path.pph>
-#include <dstr.h>
-#include <sio.h>
-
-void path_demo(void)
-{
-    dstr_t root_str = dstr_new("var/logs");
-    FSPath *path = fs_path(root_str);
-    dstr_free(&root_str);
-
-    // join paths (handles separators)
-    CALL1(path, join, "app/debug.log");
-
-    // output normalized path
-    dstr_t full_path = CALL0(path, data);
-    printf("Full Path: %s\n", full_path.data);
-    dstr_free(&full_path);
-
-    // extract directory (parent) and filename (base)
-    FSPath *parent = CALL0(path, parent);
-    FSPath *base   = CALL0(path, base);
-
-    dstr_t parent_str = CALL0(parent, data);
-    dstr_t base_str   = CALL0(base, data);
-
-    printf("Parent dir: %s\n", parent_str.data);
-    printf("filename:    %s\n", base_str.data);
-
-    dstr_free(&parent_str); dstr_free(&base_str);
-    REMOVE(parent); REMOVE(base); REMOVE(path);
-}
-```
-
-```c
-#include <fs_path.pph>
-#include <sio.h>
-
-bool file_ops_demo(void)
-{
-    dstr_t name = dstr_new("test_file.tmp");
-    FSPath *p = fs_path(name);
-    dstr_free(&name);
-
-    // create an empty file
-    if (!CALL0(p, touch)) {
-        REMOVE(p); return false;
-    }
-
-    // delete the file
-    if (!CALL0(p, remove)) {
-        REMOVE(p); return false;
-    }
-
-    REMOVE(p);
-
-    return true;
-}
-```
-
 ### Sockets
 
 ```c
 #include <socket.pph>
-#include <sio.h>
+#include <cio.h>
 #include <str.h>
 
 static void run_server(void)

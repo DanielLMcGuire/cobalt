@@ -2,7 +2,7 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#include <sio.h>
+#include <cio.h>
 #include <def.h>
 #include <str.h>
 

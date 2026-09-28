@@ -35,10 +35,6 @@ CLASS(Stream)
 
 CLASS_EXPORT(Stream);
 
-Stream *cin(void);
-Stream *cout(void);
-Stream *cerr(void);
-
 METHOD_PROTO(Stream, i64, read, (void *self, void *buf, size_t n));
 METHOD_PROTO(Stream, i64, write, (void *self, const void *buf, size_t n));
 METHOD_PROTO(Stream, i64, seek, (void *self, i64 offset, int whence));

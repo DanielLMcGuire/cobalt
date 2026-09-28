@@ -2,10 +2,10 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#include <fs_path.pph>
+#include <fs.pph>
 #include <alloc.h>
 #include <str.h>
-#include <sio.h>
+#include <cio.h>
 #include <mem.h>
 
 #if defined(_WIN32)
@@ -167,7 +167,7 @@ IMPLEMENT(FSPath, dstr_t, data, (void *self)) {
     return fs_path_to_str(this);
 }
 
-FSPath *fs_path(dstr_t path) {
+FSPath *fs(dstr_t path) {
     FSPath *p = NEW(FSPath);
     fs_path_split(p, path.data);
     return p;

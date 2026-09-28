@@ -2,8 +2,8 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#ifndef MIO_H
-#define MIO_H
+#ifndef MEMS_H
+#define MEMS_H
 
 #include <def.h>
 #include <class.pph>

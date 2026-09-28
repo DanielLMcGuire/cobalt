@@ -2,8 +2,8 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#ifndef FIO_H
-#define FIO_H
+#ifndef FILES_H
+#define FILES_H
 
 #include <def.h>
 #include <class.pph>

@@ -3,7 +3,7 @@
 // Licensed under the MIT License
 
 #include <atexit.h>
-#include <sio.h>
+#include <cio.h>
 #include <parr.h>
 #include <alloc.h>
 

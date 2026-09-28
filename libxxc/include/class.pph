@@ -8,7 +8,7 @@
 #include <def.h>
 #include <alloc.h>
 #include <atexit.h>
-#include <sio.h>
+#include <cio.h>
 
 typedef struct Class Class;
 

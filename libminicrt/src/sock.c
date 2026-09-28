@@ -4,7 +4,7 @@
 
 #include <sock.h>
 #include <mem.h>
-#include <sio.h>
+#include <cio.h>
 #include <crt_lock.h>
 
 #if defined(__linux__)

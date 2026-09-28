@@ -1,8 +1,9 @@
-#include <sio.h>
+#include <cio.h>
 #include <str.h>
 #include <mem.h>
 #include <sig.h>
 #include <atexit.h>
+#include <atomic.h>
 
 #include <class.pph>
 #include <app.pph>
@@ -18,21 +19,25 @@ CLASS(SocketDemo, Application)
 
 CLASS_EXPORT(SocketDemo);
 
-static volatile bool g_interrupted = false;
-static volatile int g_interrupt_count = 0;
+static volatile atomic_bool_t g_interrupted;
+static volatile atomic_u8_t g_interrupt_count;
 
 static void handle_sigint(int sig)
 {
     (void)sig;
-    g_interrupt_count++;
-    if (g_interrupt_count == 1) g_interrupted = true;
-    else if (g_interrupt_count >= 2)
+    u8 iInterrupt = atomic_u8_fetch_add(&g_interrupt_count, 1) + 1;
+    bool bInterrupt = atomic_bool_load(&g_interrupted);
+    if (iInterrupt == 1)
+            while (!atomic_bool_cas(&g_interrupted, &bInterrupt, !bInterrupt)) {}
+    else if (iInterrupt >= 2)
         _exit(130);
 }
 
 int program(parr_t csArgs)
 {
     (void)csArgs;
+    atomic_u8_init(&g_interrupt_count, 0);
+    atomic_bool_init(&g_interrupted, false);
     if (signal(SIGINT, handle_sigint) == SIG_ERR)
         return 1;
 
@@ -50,7 +55,8 @@ int program(parr_t csArgs)
 
     int exit_code = 0;
 
-    if (g_interrupted)
+    bool bInterrupt = atomic_bool_load(&g_interrupted);
+    if (bInterrupt)
         exit_code = 130;
     else
         exit_code = CALL0(app, main);
@@ -59,7 +65,9 @@ int program(parr_t csArgs)
     REMOVE(demo);
 #endif
 
-    if (g_interrupted && exit_code == 0)
+    bInterrupt = atomic_bool_load(&g_interrupted);
+    
+    if (bInterrupt && exit_code == 0)
         exit_code = 130;
 
     return exit_code;

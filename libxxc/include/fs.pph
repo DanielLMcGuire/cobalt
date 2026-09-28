@@ -33,6 +33,6 @@ METHOD_PROTO(FSPath, bool, remove, (void *self));
 METHOD_PROTO(FSPath, bool, touch, (void *self));
 METHOD_PROTO(FSPath, dstr_t, data, (void *self));
 
-FSPath *fs_path(dstr_t path);
+FSPath *fs(dstr_t path);
 
 #endif /* FS_PATH_H */

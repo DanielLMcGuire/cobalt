@@ -3,14 +3,14 @@
 // Licensed under the MIT License
 
 #include <def.h>
-#include <sio.h>
+#include <cio.h>
 #include <str.h>
 #include <dstr.h>
 #include <iarr.h>
 #include <parr.h>
 #include <class.pph>
-#include <mio.pph>
-#include <fs_path.pph>
+#include <mems.pph>
+#include <fs.pph>
 #include "test.h"
 
 static int g_tests_run = 0;
@@ -170,7 +170,7 @@ static bool test_memory_stream(void)
 static bool test_fspath(void)
 {
     dstr_t initial = dstr_new("usr");
-    FSPath *p = fs_path(initial);
+    FSPath *p = fs(initial);
     dstr_free(&initial);
     
     CALL1(p, join, "local/bin/app");

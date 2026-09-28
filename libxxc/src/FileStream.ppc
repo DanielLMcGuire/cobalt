@@ -2,10 +2,10 @@
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
-#include <fio.pph>
+#include <files.pph>
 #include <alloc.h>
 #include <str.h>
-#include <sio.h>
+#include <cio.h>
 
 #if defined(_WIN32)
 #include <windows.h>

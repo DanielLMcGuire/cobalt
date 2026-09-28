@@ -1,0 +1,14 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef IOS_H
+#define IOS_H
+
+#include <stream.pph>
+
+Stream *cin(void);
+Stream *cout(void);
+Stream *cerr(void);
+
+#endif

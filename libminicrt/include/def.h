@@ -7,7 +7,7 @@
 
 #define __NORETURN__ while (1) (void)0;
 
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 201710L
     #ifndef bool
         typedef int bool;
     #endif
@@ -24,6 +24,9 @@
         #define false 0
     #endif
 #else
+    #ifndef nullptr
+        #define nullptr ((void *)0) 
+    #endif
     #ifndef NULL
         #define NULL nullptr
     #else

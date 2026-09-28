@@ -1,12 +1,12 @@
 if (NOT TARGET xxc)
     set(XXC_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/app.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/argparse.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/stream.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/fio.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/fs_path.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/mio.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/socket.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/App.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Argparse.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Stream.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/FileStream.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/FSPath.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/MemoryStream.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Socket.ppc
     )
     set_source_files_properties(${XXC_SOURCES} PROPERTIES LANGUAGE C)
 
@@ -16,9 +16,9 @@ if (NOT TARGET xxc)
         ${CMAKE_CURRENT_SOURCE_DIR}/include/app.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/argparse.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/stream.pph
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/fio.pph
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/fs_path.pph
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/mio.pph
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/files.pph
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/fs.pph
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/mems.pph
     )
     add_library(xxc::xxc ALIAS xxc)
 

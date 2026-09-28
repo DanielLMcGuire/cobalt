@@ -8,6 +8,8 @@ if (NOT TARGET minicrt)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/atexit.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/atexit.h
 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/atomic.h
+
         ${CMAKE_CURRENT_SOURCE_DIR}/src/str.c
         ${CMAKE_CURRENT_SOURCE_DIR}/include/str.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/mem.c
@@ -31,7 +33,7 @@ if (NOT TARGET minicrt)
 
         ${CMAKE_CURRENT_SOURCE_DIR}/src/format.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sio.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/sio.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/cio.h
     )
     add_library(xxc::minicrt ALIAS minicrt)
 

@@ -5,7 +5,7 @@
 #ifndef TEST_H
 #define TEST_H
 
-#include <sio.h>
+#include <cio.h>
 
 #define ASSERT(cond) \
     do { \
