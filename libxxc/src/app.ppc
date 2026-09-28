@@ -45,7 +45,8 @@ IMPLEMENT(Application, void, parse_args, (void *self, const parr_t *argv))
 
     const char *path = NULL;
 
-    if (argv && argv->len > 0) {
+    if (argv && argv->len > 0)
+    {
         path = (const char *)argv->data[0];
         dstr_t dsPath = dstr_new(path);
         FSPath *fPath = fs(dsPath);
@@ -56,7 +57,9 @@ IMPLEMENT(Application, void, parse_args, (void *self, const parr_t *argv))
         this->program = dstr_new(baseStr.data);
         dstr_free(&baseStr);
         REMOVE(fParent);
-    } else {
+    } 
+    else 
+    {
         this->program = dstr_new("app");
     }
 

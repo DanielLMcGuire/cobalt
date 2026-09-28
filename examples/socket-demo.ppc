@@ -111,10 +111,13 @@ IMPLEMENT(SocketDemo, int, run, (void *self))
     bool is_server = CALL1(this->base.args, get_bool, "server");
     bool is_client = CALL1(this->base.args, get_bool, "client");
 
-    if (is_server) {
+    if (is_server)
+    {
         this->run_server(self);
         return 0;
-    } else if (is_client) {
+    }
+    else if (is_client)
+    {
         this->run_client(self);
         return 0;
     }
@@ -131,7 +134,8 @@ IMPLEMENT(SocketDemo, void, run_server, (void *self))
 
     SocketStream *listener = tcp_listen(SOCK_INADDR_ANY, port, 5);
     
-    if (!listener) {
+    if (!listener)
+    {
         printf("Failed to bind/listen on port %d.\n", port);
         return;
     }
@@ -141,7 +145,8 @@ IMPLEMENT(SocketDemo, void, run_server, (void *self))
     sock_addr_in_t peer_addr;
     Stream *client = tcp_accept(listener, &peer_addr);
 
-    if (client) {
+    if (client)
+    {
         puts("Client connected!", SIOOUT);
 
         CALL1(client, fprintln, "Welcome to the ++C Server!");
@@ -149,9 +154,8 @@ IMPLEMENT(SocketDemo, void, run_server, (void *self))
         char buf[256] = {0};
         i64 bytes = CALL2(client, read, buf, sizeof(buf) - 1);
         
-        if (bytes > 0) {
+        if (bytes > 0)
             printf("Received from client: %s\n", buf);
-        }
 
         REMOVE(client);
     }
@@ -169,7 +173,8 @@ IMPLEMENT(SocketDemo, void, run_client, (void *self))
 
     Stream *conn = tcp_connect(host, port);
     
-    if (!conn) {
+    if (!conn)
+    {
         puts("Connection failed.", SIOOUT);
         return;
     }

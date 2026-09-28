@@ -70,7 +70,8 @@ IMPLEMENT(MemoryStream, i64, write, (void *self, const void *buf, size_t n))
             new_capacity *= 2;
 
         char *new_buffer = (char *)realloc(this->buffer, new_capacity);
-        if (!new_buffer) {
+        if (!new_buffer)
+        {
             result = -1;
             goto done;
         }
@@ -98,13 +99,15 @@ IMPLEMENT(MemoryStream, i64, seek, (void *self, i64 offset, int whence))
 
     __crt_lock_acquire(&this->base.lock);
 
-    switch (whence) {
+    switch (whence)
+    {
         case FS_SEEK_SET: new_pos = offset; break;
         case FS_SEEK_CUR: new_pos = (i64)this->position + offset; break;
         case FS_SEEK_END: new_pos = (i64)this->size + offset; break;
     }
 
-    if (new_pos >= 0) {
+    if (new_pos >= 0)
+    {
         this->position = (size_t)new_pos;
         result = new_pos;
     }
@@ -136,7 +139,8 @@ IMPLEMENT(MemoryStream, void, close, (void *self))
     MemoryStream *this = (MemoryStream *)self;
     __crt_lock_acquire(&this->base.lock);
 
-    if (this->buffer) {
+    if (this->buffer)
+    {
         free(this->buffer);
         this->buffer = NULL;
     }

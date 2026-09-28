@@ -24,12 +24,14 @@ CLASS_EXPORT(Animal);
 const char* METHOD_DECL(Animal, speak)(void *self);
 CLASS_INFO_ROOT(Animal);
 
-CONSTRUCTOR(Animal) {
+CONSTRUCTOR(Animal)
+{
     METHOD_LINK(Animal, speak);
 }
 DECONSTRUCTOR(Animal) {}
 
-IMPLEMENT(Animal, const char*, speak, (void *self)) {
+IMPLEMENT(Animal, const char*, speak, (void *self))
+{
     (void)self;
     return "...";
 }
@@ -42,15 +44,18 @@ CLASS_EXPORT(Dog);
 const char* METHOD_DECL(Dog, speak)(void *self);
 CLASS_INFO(Dog, Animal);
 
-CONSTRUCTOR(Dog) {
+CONSTRUCTOR(Dog)
+{
     SUPER_CTOR(self, Animal);
     METHOD_LINK(base, Dog, speak); 
 }
-DECONSTRUCTOR(Dog) {
+DECONSTRUCTOR(Dog)
+{
     SUPER_DTOR(self, Animal);
 }
 
-IMPLEMENT(Dog, const char*, speak, (void *self)) {
+IMPLEMENT(Dog, const char*, speak, (void *self))
+{
     (void)self;
     return "Woof!";
 }
@@ -76,9 +81,8 @@ static bool test_iarr(void)
 {
     iarr_t arr = iarr_new(NULL, 0);
     
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 100; i++)
         iarr_append_val(&arr, i);
-    }
     
     ASSERT(arr.len == 100);
     ASSERT(arr.cap >= 100);
@@ -288,10 +292,13 @@ int program(parr_t csArgs)
     RUN_TEST(test_snprintf_truncation);
     RUN_TEST(test_dstr_edge_cases);
 
-    if (g_tests_run == g_tests_passed) {
+    if (g_tests_run == g_tests_passed)
+    {
         printf(" SUCCESS: All %d tests passed!\n", g_tests_passed);
         return 0;
-    } else {
+    } 
+    else 
+    {
         printf(" FAILURE: %d / %d tests failed.\n", (g_tests_run - g_tests_passed), g_tests_run);
         return 1;
     }

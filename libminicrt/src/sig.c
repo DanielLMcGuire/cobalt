@@ -50,7 +50,8 @@ int sigaction(int signum, const sigaction_t *act, sigaction_t *oldact)
     if (signum < 1 || signum >= NSIG || signum == SIGKILL || signum == SIGSTOP)
         return -1;
 
-    if (act) {
+    if (act)
+    {
         kact.handler = act->sa_handler;
         kact.flags   = act->sa_flags;
         kact.mask    = act->sa_mask;
@@ -70,7 +71,8 @@ int sigaction(int signum, const sigaction_t *act, sigaction_t *oldact)
 
     if (ret < 0) return -1;
 
-    if (oldact) {
+    if (oldact)
+    {
         oldact->sa_handler  = koldact.handler;
         oldact->sa_flags    = koldact.flags;
         oldact->sa_restorer = koldact.restorer;
@@ -153,7 +155,8 @@ static LONG WINAPI vectored_exc_handler(EXCEPTION_POINTERS *ExceptionInfo)
 static BOOL WINAPI console_ctrl_handler(DWORD ctrl_type)
 {
     int signum = 0;
-    switch (ctrl_type) {
+    switch (ctrl_type)
+    {
         case CTRL_C_EVENT:
             signum = SIGINT; 
             break;
@@ -171,11 +174,10 @@ static BOOL WINAPI console_ctrl_handler(DWORD ctrl_type)
     sighandler_t handler = g_sigactions[signum].sa_handler;
     ReleaseSRWLockShared(&g_sig_lock);
 
-    if (handler == SIG_DFL) {
+    if (handler == SIG_DFL)
         return FALSE;
-    } else if (handler == SIG_IGN) {
+    else if (handler == SIG_IGN)
         return TRUE;
-    }
 
     handler(signum);
     return TRUE;
@@ -186,7 +188,8 @@ static void ensure_win32_handlers(void)
     if (g_handlers_installed) return;
 
     AcquireSRWLockExclusive(&g_sig_lock);
-    if (!g_handlers_installed) {
+    if (!g_handlers_installed)
+    {
         SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
         g_veh_handle = AddVectoredExceptionHandler(1, vectored_exc_handler);
         g_handlers_installed = 1;
@@ -203,13 +206,11 @@ int sigaction(int signum, const sigaction_t *act, sigaction_t *oldact)
 
     AcquireSRWLockExclusive(&g_sig_lock);
     
-    if (oldact) {
+    if (oldact)
         *oldact = g_sigactions[signum];
-    }
     
-    if (act) {
+    if (act)
         g_sigactions[signum] = *act;
-    }
 
     ReleaseSRWLockExclusive(&g_sig_lock);
     return 0;
@@ -241,16 +242,17 @@ int raise(int sig)
     sighandler_t handler = g_sigactions[sig].sa_handler;
     ReleaseSRWLockShared(&g_sig_lock);
 
-    if (handler == SIG_IGN) {
+    if (handler == SIG_IGN)
         return 0;
-    }
 
-    if (handler != SIG_DFL) {
+    if (handler != SIG_DFL)
+    {
         handler(sig);
         return 0;
     }
 
-    switch (sig) {
+    switch (sig)
+    {
         case SIGKILL:
         case SIGTERM:
         case SIGINT:

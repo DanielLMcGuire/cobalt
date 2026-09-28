@@ -98,20 +98,27 @@ IMPLEMENT(Stream, int, fvprintf, (void *self, const char *fmt, va_list args))
     va_copy(args_copy, args);
 
     int len = vsnprintf(stack_buf, sizeof(stack_buf), fmt, args);
-    if (len < 0) {
+    if (len < 0)
+    {
         va_end(args_copy);
         return len;
     }
 
-    if ((size_t)len < sizeof(stack_buf)) {
+    if ((size_t)len < sizeof(stack_buf))
+    {
         this->write(self, stack_buf, (size_t)len);
-    } else {
+    } 
+    else 
+    {
         char *dyn_buf = (char *)malloc((size_t)len + 1);
-        if (dyn_buf) {
+        if (dyn_buf) 
+        {
             vsnprintf(dyn_buf, (size_t)len + 1, fmt, args_copy);
             this->write(self, dyn_buf, (size_t)len);
             free(dyn_buf);
-        } else {
+        } 
+        else 
+        {
             this->write(self, stack_buf, sizeof(stack_buf) - 1);
         }
     }

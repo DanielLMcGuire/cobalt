@@ -16,7 +16,8 @@
 
 CLASS_INFO_ROOT(FSPath);
 
-CONSTRUCTOR(FSPath) {
+CONSTRUCTOR(FSPath)
+{
     self->dsData = parr_new(NULL, 0);
     METHOD_LINK(FSPath, join);
     METHOD_LINK(FSPath, parent);
@@ -27,28 +28,36 @@ CONSTRUCTOR(FSPath) {
     METHOD_LINK(FSPath, data);
 }
 
-DECONSTRUCTOR(FSPath) {
+DECONSTRUCTOR(FSPath)
+{
     parr_free_dstr(&self->dsData);
 }
 
-static dstr_t fs_path_to_str(FSPath *self) {
+static dstr_t fs_path_to_str(FSPath *self)
+{
     dstr_t result = dstr_new("");
 #if defined(_WIN32)
-    if (self->dsData.len > 0 && self->dsData.data[0] && strlen(((dstr_t*)self->dsData.data[0])->data) == 2) {
+    if (self->dsData.len > 0 && self->dsData.data[0] && strlen(((dstr_t*)self->dsData.data[0])->data) == 2)
+    {
         dstr_append(&result, ((dstr_t*)self->dsData.data[0])->data);
         dstr_append(&result, "\\");
-        for (size_t i = 1; i < self->dsData.len; i++) {
+        for (size_t i = 1; i < self->dsData.len; i++)
+        {
             dstr_append(&result, ((dstr_t*)self->dsData.data[i])->data);
             if (i < self->dsData.len - 1) dstr_append(&result, "\\");
         }
-    } else {
-        for (size_t i = 0; i < self->dsData.len; i++) {
+    } 
+    else 
+    {
+        for (size_t i = 0; i < self->dsData.len; i++) 
+        {
             dstr_append(&result, ((dstr_t*)self->dsData.data[i])->data);
             if (i < self->dsData.len - 1) dstr_append(&result, "\\");
         }
     }
 #else
-    for (size_t i = 0; i < self->dsData.len; i++) {
+    for (size_t i = 0; i < self->dsData.len; i++) 
+    {
         dstr_append(&result, ((dstr_t*)self->dsData.data[i])->data);
         if (i < self->dsData.len - 1) dstr_append(&result, "/");
     }
@@ -56,27 +65,30 @@ static dstr_t fs_path_to_str(FSPath *self) {
     return result;
 }
 
-static void fs_path_split(FSPath *self, const char *path) {
+static void fs_path_split(FSPath *self, const char *path) 
+{
     if (!path) return;
     
     const char *curr = path;
-    while (*curr) {
+    while (*curr) 
+    {
 #if defined(_WIN32)
         if (*curr == ':') curr++;
 #endif
 
-        if (*curr == '/' || *curr == '\\') {
+        if (*curr == '/' || *curr == '\\') 
+        {
             curr++;
             continue;
         }
 
         const char *start = curr;
-        while (*curr && *curr != '/' && *curr != '\\') {
+        while (*curr && *curr != '/' && *curr != '\\')
             curr++;
-        }
         
         size_t len = curr - start;
-        if (len > 0) {
+        if (len > 0) 
+        {
             char temp[256];
             if (len >= 256) len = 255;
             memcpy(temp, start, len);
@@ -89,42 +101,47 @@ static void fs_path_split(FSPath *self, const char *path) {
     }
 }
 
-IMPLEMENT(FSPath, void, join, (void *self, const char *path)) {
+IMPLEMENT(FSPath, void, join, (void *self, const char *path)) 
+{
     FSPath *this = (FSPath *)self;
     if (!path) return;
     fs_path_split(this, path);
 }
 
-IMPLEMENT(FSPath, FSPath *, parent, (void *self)) {
+IMPLEMENT(FSPath, FSPath *, parent, (void *self)) 
+{
     FSPath *this = (FSPath *)self;
     FSPath *p = NEW(FSPath);
-    if (this->dsData.len > 0) {
-        for (size_t i = 0; i < this->dsData.len - 1; i++) {
+    if (this->dsData.len > 0) 
+    {
+        for (size_t i = 0; i < this->dsData.len - 1; i++) 
             parr_append_dstr(&p->dsData, (dstr_t*)this->dsData.data[i]);
-        }
     }
     return p;
 }
 
-IMPLEMENT(FSPath, FSPath *, base, (void *self)) {
+IMPLEMENT(FSPath, FSPath *, base, (void *self))
+{
     FSPath *this = (FSPath *)self;
     FSPath *b = NEW(FSPath);
-    if (this->dsData.len > 0) {
+    if (this->dsData.len > 0)
         parr_append_dstr(&b->dsData, (dstr_t*)this->dsData.data[this->dsData.len - 1]);
-    }
+
     return b;
 }
 
-IMPLEMENT(FSPath, FSPath *, relative, (void *self)) {
+IMPLEMENT(FSPath, FSPath *, relative, (void *self))
+{
     FSPath *this = (FSPath *)self;
     FSPath *r = NEW(FSPath);
-    for (size_t i = 0; i < this->dsData.len; i++) {
+    for (size_t i = 0; i < this->dsData.len; i++)
         parr_append_dstr(&r->dsData, (dstr_t*)this->dsData.data[i]);
-    }
+
     return r;
 }
 
-IMPLEMENT(FSPath, bool, remove, (void *self)) {
+IMPLEMENT(FSPath, bool, remove, (void *self))
+{
     FSPath *this = (FSPath *)self;
     dstr_t path_str = fs_path_to_str(this);
     bool success = false;
@@ -139,20 +156,23 @@ IMPLEMENT(FSPath, bool, remove, (void *self)) {
     return success;
 }
 
-IMPLEMENT(FSPath, bool, touch, (void *self)) {
+IMPLEMENT(FSPath, bool, touch, (void *self))
+{
     FSPath *this = (FSPath *)self;
     dstr_t path_str = fs_path_to_str(this);
     bool success = false;
 
 #if defined(_WIN32)
     HANDLE h = CreateFileA(path_str.data, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (h != INVALID_HANDLE_VALUE) {
+    if (h != INVALID_HANDLE_VALUE)
+    {
         CloseHandle(h);
         success = true;
     }
 #elif defined(__linux__)
     int fd = sys_openat(AT_FDCWD, path_str.data, O_CREAT | O_WRONLY, 0666);
-    if (fd >= 0) {
+    if (fd >= 0)
+    {
         sys_close(fd);
         success = true;
     }
@@ -162,12 +182,14 @@ IMPLEMENT(FSPath, bool, touch, (void *self)) {
     return success;
 }
 
-IMPLEMENT(FSPath, dstr_t, data, (void *self)) {
+IMPLEMENT(FSPath, dstr_t, data, (void *self))
+{
     FSPath *this = (FSPath *)self;
     return fs_path_to_str(this);
 }
 
-FSPath *fs(dstr_t path) {
+FSPath *fs(dstr_t path)
+{
     FSPath *p = NEW(FSPath);
     fs_path_split(p, path.data);
     return p;

@@ -9,7 +9,8 @@
 
 #define ASSERT(cond) \
     do { \
-        if (!(cond)) { \
+        if (!(cond)) \
+        { \
             printf("  [FAIL] %s:%d: Assertion '%s' failed.\n", __FILE__, __LINE__, #cond); \
             return false; \
         } \
@@ -17,7 +18,8 @@
 
 #define ASSERT_STR_EQ(a, b) \
     do { \
-        if (strcmp((a), (b)) != 0) { \
+        if (strcmp((a), (b)) != 0) \
+        { \
             printf("  [FAIL] %s:%d: Expected '%s', got '%s'.\n", __FILE__, __LINE__, (b), (a)); \
             return false; \
         } \
@@ -27,7 +29,8 @@
     do { \
         printf("Running %s...\n", #test); \
         g_tests_run++; \
-        if (test()) { \
+        if (test()) \
+        { \
             printf("  [OK]\n"); \
             g_tests_passed++; \
         } \

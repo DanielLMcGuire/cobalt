@@ -73,9 +73,11 @@ IMPLEMENT(FileStream, i64, read, (void *self, void *buf, size_t n))
     DWORD request = n > (size_t)MAXDWORD ? MAXDWORD : (DWORD)n;
     DWORD bytes_read = 0;
 
-    if (!ReadFile(this->fd, buf, request, &bytes_read, NULL)) {
+    if (!ReadFile(this->fd, buf, request, &bytes_read, NULL))
+    {
         DWORD error = GetLastError();
-        if (error == ERROR_BROKEN_PIPE || error == ERROR_HANDLE_EOF) {
+        if (error == ERROR_BROKEN_PIPE || error == ERROR_HANDLE_EOF)
+        {
             this->eof_flag = true;
             result = 0;
         }
@@ -132,7 +134,8 @@ IMPLEMENT(FileStream, i64, seek, (void *self, i64 offset, int whence))
 #if defined(_WIN32)
     if (!this->fd || this->fd == INVALID_HANDLE_VALUE) goto done;
     DWORD method;
-    switch (whence) {
+    switch (whence)
+    {
         case FS_SEEK_SET: method = FILE_BEGIN; break;
         case FS_SEEK_CUR: method = FILE_CURRENT; break;
         case FS_SEEK_END: method = FILE_END; break;
@@ -141,7 +144,8 @@ IMPLEMENT(FileStream, i64, seek, (void *self, i64 offset, int whence))
 
     LARGE_INTEGER distance, position;
     distance.QuadPart = offset;
-    if (SetFilePointerEx(this->fd, distance, &position, method)) {
+    if (SetFilePointerEx(this->fd, distance, &position, method))
+    {
         this->eof_flag = false;
         result = (i64)position.QuadPart;
     }
@@ -194,12 +198,14 @@ IMPLEMENT(FileStream, void, close, (void *self))
     __crt_lock_acquire(&this->base.lock);
 
 #if defined(_WIN32)
-    if (this->owns_fd && this->fd && this->fd != INVALID_HANDLE_VALUE) {
+    if (this->owns_fd && this->fd && this->fd != INVALID_HANDLE_VALUE)
+    {
         CloseHandle(this->fd);
         this->fd = INVALID_HANDLE_VALUE;
     }
 #elif defined(__linux__)
-    if (this->owns_fd && this->fd >= 0) {
+    if (this->owns_fd && this->fd >= 0)
+    {
         sys_close(this->fd);
         this->fd = -1;
     }
