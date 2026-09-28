@@ -9,16 +9,16 @@
 
 extern int program(parr_t csArgs);
 
-extern void fs_init(void);
-extern void init_io(unsigned int out, unsigned int err);
+extern void xxc_io_init(void);
+extern void sio_init(unsigned int out, unsigned int err);
 
 #ifdef _WIN32
 #include <windows.h>
 
 void pluspluscBoot(int argc, char **argv)
 {
-    fs_init();
-    init_io(STD_OUTPUT_HANDLE, STD_ERROR_HANDLE);
+    xxc_io_init();
+    sio_init(STD_OUTPUT_HANDLE, STD_ERROR_HANDLE);
 
     parr_t args = parr_new((const void**)argv, (size_t)argc);
 
@@ -34,8 +34,8 @@ void pluspluscBoot(int argc, char **argv)
 
 void pluspluscBoot(int argc, char **argv)
 {
-    fs_init();
-    init_io(0, 0);
+    xxc_io_init();
+    sio_init(0, 0);
     parr_t args = parr_new((const void**)argv, (size_t)argc);
     int ret = program(args);
     parr_free(&args);

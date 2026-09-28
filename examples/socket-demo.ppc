@@ -111,7 +111,7 @@ IMPLEMENT(SocketDemo, int, run, (void *self))
         return 0;
     }
 
-    printf("Please specify either --server or --client\n");
+    puts("Please specify either --server or --client", SIOOUT);
     return 1;
 }
 
@@ -128,16 +128,15 @@ IMPLEMENT(SocketDemo, void, run_server, (void *self))
         return;
     }
 
-    printf("Waiting for a connection...\n");
+    puts("Waiting for a connection...", SIOOUT);
 
     sock_addr_in_t peer_addr;
     Stream *client = tcp_accept(listener, &peer_addr);
 
     if (client) {
-        printf("Client connected!\n");
+        puts("Client connected!", SIOOUT);
 
-        const char *msg = "Welcome to the ++C Server!\n";
-        CALL2(client, write, msg, strlen(msg));
+        CALL1(client, fprintln, "Welcome to the ++C Server!");
 
         char buf[256] = {0};
         i64 bytes = CALL2(client, read, buf, sizeof(buf) - 1);
@@ -163,18 +162,17 @@ IMPLEMENT(SocketDemo, void, run_client, (void *self))
     Stream *conn = tcp_connect(host, port);
     
     if (!conn) {
-        printf("Connection failed.\n");
+        puts("Connection failed.", SIOOUT);
         return;
     }
 
-    printf("Connected!\n");
+    puts("Connected!", SIOOUT);
 
     char buf[256] = {0};
     CALL2(conn, read, buf, sizeof(buf) - 1);
     printf("Server says: %s", buf);
 
-    const char *msg = "Hello from ++C Client!\n";
-    CALL2(conn, write, msg, strlen(msg));
+    CALL1(conn, fprintln, "Hello from ++C Client!\n");
 
     REMOVE(conn);
 }

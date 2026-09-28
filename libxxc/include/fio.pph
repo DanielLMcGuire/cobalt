@@ -10,10 +10,6 @@
 #include <dstr.h>
 #include <stream.pph>
 
-#define FS_SEEK_SET 0
-#define FS_SEEK_CUR 1
-#define FS_SEEK_END 2
-
 CLASS(FileStream, Stream)
 {
     BASE(Stream)
@@ -41,12 +37,7 @@ METHOD_PROTO(FileStream, void, close, (void *self));
 
 Stream *fopen(const char *path, const char *mode);
 
-Stream *stdin(void);
-Stream *stdout(void);
-Stream *stderr(void);
-
 i64 fwrite(Stream *s, const char *str);
 i64 freadline(Stream *s, dstr_t *out);
-int fprintf(Stream *s, const char *fmt, ...);
 
 #endif /* FIO_H */

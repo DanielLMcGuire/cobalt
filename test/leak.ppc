@@ -29,7 +29,7 @@ int program(parr_t csArgs)
 
     parr_free(&args);
 
-    printf("leak_test: completed 200000 iterations OK\n");
+    puts("leak_test: completed 200000 iterations OK", SIOOUT);
     return 0;
 }
 

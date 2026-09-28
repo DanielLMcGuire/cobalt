@@ -5,6 +5,7 @@
 #include <app.pph>
 #include <fs_path.pph>
 #include <sio.h>
+#include <stream.pph>
 
 CLASS_INFO_ROOT(Application);
 
@@ -72,8 +73,8 @@ IMPLEMENT(Application, void, print_help, (void *self))
 {
     Application *this = (Application *)self;
 
-    printf("Usage: %s [OPTIONS...]\n", this->program.data ? this->program.data : "app");
-    puts("OPTIONS:", SIOOUT);
+    CALL2(cout(), fprintf, "Usage: %s [OPTIONS...]\n", this->program.data ? this->program.data : "app");
+    CALL1(cout(), fprintln, "OPTIONS:");
     CALL0(this->args, print_flags);
 }
 

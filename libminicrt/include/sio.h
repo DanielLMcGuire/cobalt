@@ -21,8 +21,6 @@ int puts_ds(dstr_t *s, unsigned int stream);
 
 int putchar(int c, unsigned int stream);
 
-void init_io(unsigned int out, unsigned int err);
-
 void print_parr_c_string(const parr_t *csArr, unsigned int stream);
 
 void print_parr_dstr(const parr_t *dsArr, unsigned int stream);

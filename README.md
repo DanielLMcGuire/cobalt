@@ -174,7 +174,6 @@ signal(SIGINT, SIG_IGN);
 
 ```c
 #include <fio.pph>
-#include <sio.h>
 
 void fwrite_demo(void)
 {
@@ -182,14 +181,14 @@ void fwrite_demo(void)
     Stream *file = fopen("log.txt", "w");
     if (!file)
     {
-        puts("Failed to open file for writing.", SIOERR);
+        CALL1(cerr(), println, "Failed to open file for writing.");
         return;
     }
 
-    fprintf(file, "Application started: %s\n", "DemoApp");
-    fprintf(file, "Count: %d, Float: %f\n", 42, 3.14159);
+    CALL2(file, printf, "Application started: %s\n", "DemoApp");
+    CALL3(file, printf, "Count: %d, Float: %f\n", 42, 3.14159);
 
-    fwrite(file, "static text.\n");
+    CALL1(file, println, "static text.");
 
     REMOVE(file);
 }
@@ -202,12 +201,12 @@ void fwrite_demo(void)
 
 void stdio_demo(void)
 {
-    fprintf(stdout(), "Hello, World!\n");
-    fprintf(stderr(), "Uh oh!: code %d\n", 500);
+    CALL1(cout(), println, "Hello, World!");
+    CALL2(cerr(), printf, "Uh oh!: code %d\n", 500);
 
     dstr_t input = {0};
-    freadline(stdin(), &input);
-    fprintf(stdout(), "You entered: %s\n", input.data);
+    CALL1(cin(), readline, &input);
+    CALL2(cout(), printf, "You entered: %s\n", input.data);
     dstr_free(&input);
 }
 ```
@@ -216,8 +215,6 @@ void stdio_demo(void)
 
 ```c
 #include <mio.pph>
-#include <fio.pph>   // FS_SEEK_SET and fprintf
-#include <sio.h>
 
 void memory_stream_demo(void)
 {
@@ -225,7 +222,7 @@ void memory_stream_demo(void)
     Stream *stream = AS(Stream, ms);
 
     // write formatted data into memory
-    fprintf(stream, "Message: %s (ID: %d)", "MemoryStream Test", 101);
+    CALL3(stream, printf, "Message: %s (ID: %d)", "MemoryStream Test", 101);
 
     // rewind back to the beginning
     CALL2(stream, seek, 0, FS_SEEK_SET);
@@ -233,11 +230,11 @@ void memory_stream_demo(void)
     // read bytes back from the memory stream
     char buffer[64] = {0};
     i64 bytes_read = CALL2(stream, read, buffer, sizeof(buffer) - 1);
-    printf("Read %lld bytes from memory: %s\n", bytes_read, buffer);
+    CALL2(cout(), printf, "Read %lld bytes from memory: %s\n", bytes_read, buffer);
 
     // inspect the underlying buffer directly
     const char *raw_buf = mstream_get_buffer(ms);
-    printf("Raw contents: %s\n", raw_buf);
+    CALL2(cout(), printf, "Raw contents: %s\n", raw_buf);
 
     REMOVE(ms);
 }

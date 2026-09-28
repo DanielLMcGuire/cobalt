@@ -14,18 +14,30 @@
 #define FS_SEEK_CUR 1
 #define FS_SEEK_END 2
 
+#define STREAM_STACK_BUF_SIZE 1024
+
 CLASS(Stream)
 {
     FIELD(crt_lock_t, lock)
-    METHOD(i64,  read,  (void *self, void *buf, size_t n))
-    METHOD(i64,  write, (void *self, const void *buf, size_t n))
-    METHOD(i64,  seek,  (void *self, i64 offset, int whence))
-    METHOD(i64,  tell,  (void *self))
-    METHOD(int,  eof,   (void *self))
-    METHOD(void, close, (void *self))
+
+    METHOD(i64,  read,    (void *self, void *buf, size_t n))
+    METHOD(i64,  write,   (void *self, const void *buf, size_t n))
+    METHOD(i64,  seek,    (void *self, i64 offset, int whence))
+    METHOD(i64,  tell,    (void *self))
+    METHOD(int,  eof,     (void *self))
+    METHOD(void, close,   (void *self))
+
+    METHOD(i64,  fprint,   (void *self, const char *str))
+    METHOD(i64,  fprintln, (void *self, const char *str))
+    METHOD(int,  fvprintf, (void *self, const char *fmt, va_list args))
+    METHOD(int,  fprintf,  (void *self, const char *fmt, ...))
 };
 
 CLASS_EXPORT(Stream);
+
+Stream *cin(void);
+Stream *cout(void);
+Stream *cerr(void);
 
 METHOD_PROTO(Stream, i64, read, (void *self, void *buf, size_t n));
 METHOD_PROTO(Stream, i64, write, (void *self, const void *buf, size_t n));
@@ -33,5 +45,10 @@ METHOD_PROTO(Stream, i64, seek, (void *self, i64 offset, int whence));
 METHOD_PROTO(Stream, i64, tell, (void *self));
 METHOD_PROTO(Stream, int, eof, (void *self));
 METHOD_PROTO(Stream, void, close, (void *self));
+
+METHOD_PROTO(Stream, i64, fprint, (void *self, const char *str));
+METHOD_PROTO(Stream, i64, fprintln, (void *self, const char *str));
+METHOD_PROTO(Stream, int, fvprintf, (void *self, const char *fmt, va_list args));
+METHOD_PROTO(Stream, int, fprintf, (void *self, const char *fmt, ...));
 
 #endif /* Stream_H */

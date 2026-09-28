@@ -7,27 +7,35 @@
 long sys_write(int fd, const void *buf, size_t count) {
     return syscall(__NR_write, (long)fd, (long)buf, (long)count);
 }
+
 long sys_read(int fd, void *buf, size_t count) {
     return syscall(__NR_read, (long)fd, (long)buf, (long)count);
 }
+
 int sys_close(int fd) {
     return (int)syscall(__NR_close, (long)fd);
 }
+
 long sys_unlink(const char *path) {
     return syscall(__NR_unlink, (long)path);
 }
+
 long sys_lseek(int fd, long offset, int whence) {
     return syscall(__NR_lseek, (long)fd, offset, (long)whence);
 }
+
 long sys_openat(int dirfd, const char *path, int flags, int mode) {
     return syscall(__NR_openat, (long)dirfd, (long)path, (long)flags, (long)mode);
 }
+
 long sys_rt_sigaction(int signum, const void *act, void *oldact, size_t sigsetsize) {
     return syscall(__NR_rt_sigaction, (long)signum, (long)act, (long)oldact, (long)sigsetsize);
 }
+
 long sys_getpid(void) {
     return syscall(__NR_getpid);
 }
+
 long sys_gettid(void) {
 #if defined(__NR_gettid)
     return syscall(__NR_gettid);
@@ -35,9 +43,11 @@ long sys_gettid(void) {
     return syscall(__NR_getpid);
 #endif
 }
+
 long sys_kill(long pid, int sig) {
     return syscall(__NR_kill, pid, (long)sig);
 }
+
 void sys_exit(int status) {
 #if defined(__NR_exit_group)
     (void)syscall(__NR_exit_group, (long)status);
@@ -46,6 +56,7 @@ void sys_exit(int status) {
 #endif
     __NORETURN__
 }
+
 void* sys_mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset) {
     long ret = -1;
 #if defined(__NR_mmap2)
@@ -56,6 +67,7 @@ void* sys_mmap(void *addr, size_t length, int prot, int flags, int fd, size_t of
     if (ret < 0 && ret >= -4095) return NULL; 
     return (void*)ret;
 }
+
 int sys_munmap(void *addr, size_t length) {
     return (int)syscall(__NR_munmap, (long)addr, (long)length, 0);
 }
@@ -98,6 +110,7 @@ long sys_socket(int domain, int type, int protocol) {
     return syscall(__NR_socket, (long)domain, (long)type, (long)protocol);
 #endif
 }
+
 long sys_bind(long sockfd, const void *addr, unsigned int addrlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_BIND, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
@@ -105,6 +118,7 @@ long sys_bind(long sockfd, const void *addr, unsigned int addrlen) {
     return syscall(__NR_bind, sockfd, (long)addr, (long)addrlen);
 #endif
 }
+
 long sys_listen(long sockfd, int backlog) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_LISTEN, sockfd, (long)backlog, 0, 0, 0, 0);
@@ -112,6 +126,7 @@ long sys_listen(long sockfd, int backlog) {
     return syscall(__NR_listen, sockfd, (long)backlog);
 #endif
 }
+
 long sys_accept4(long sockfd, void *addr, unsigned int *addrlen, int flags) {
 #if defined(XXC_USE_SOCKETCALL)
     if (flags != 0)
@@ -127,6 +142,7 @@ long sys_accept4(long sockfd, void *addr, unsigned int *addrlen, int flags) {
     return -38; /* -ENOSYS */
 #endif
 }
+
 long sys_connect(long sockfd, const void *addr, unsigned int addrlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_CONNECT, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
@@ -134,6 +150,7 @@ long sys_connect(long sockfd, const void *addr, unsigned int addrlen) {
     return syscall(__NR_connect, sockfd, (long)addr, (long)addrlen);
 #endif
 }
+
 long sys_sendto(long sockfd, const void *buf, size_t len, int flags, const void *dest_addr, unsigned int addrlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_SENDTO, sockfd, (long)buf, (long)len, (long)flags, (long)dest_addr, (long)addrlen);
@@ -141,6 +158,7 @@ long sys_sendto(long sockfd, const void *buf, size_t len, int flags, const void 
     return syscall(__NR_sendto, sockfd, (long)buf, (long)len, (long)flags, (long)dest_addr, (long)addrlen);
 #endif
 }
+
 long sys_recvfrom(long sockfd, void *buf, size_t len, int flags, void *src_addr, unsigned int *addrlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_RECVFROM, sockfd, (long)buf, (long)len, (long)flags, (long)src_addr, (long)addrlen);
@@ -148,6 +166,7 @@ long sys_recvfrom(long sockfd, void *buf, size_t len, int flags, void *src_addr,
     return syscall(__NR_recvfrom, sockfd, (long)buf, (long)len, (long)flags, (long)src_addr, (long)addrlen);
 #endif
 }
+
 long sys_shutdown(long sockfd, int how) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_SHUTDOWN, sockfd, (long)how, 0, 0, 0, 0);
@@ -155,6 +174,7 @@ long sys_shutdown(long sockfd, int how) {
     return syscall(__NR_shutdown, sockfd, (long)how);
 #endif
 }
+
 long sys_setsockopt(long sockfd, int level, int optname, const void *optval, unsigned int optlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_SETSOCKOPT, sockfd, (long)level, (long)optname, (long)optval, (long)optlen, 0);
@@ -162,6 +182,7 @@ long sys_setsockopt(long sockfd, int level, int optname, const void *optval, uns
     return syscall(__NR_setsockopt, sockfd, (long)level, (long)optname, (long)optval, (long)optlen);
 #endif
 }
+
 long sys_getsockopt(long sockfd, int level, int optname, void *optval, unsigned int *optlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_GETSOCKOPT, sockfd, (long)level, (long)optname, (long)optval, (long)optlen, 0);
@@ -169,6 +190,7 @@ long sys_getsockopt(long sockfd, int level, int optname, void *optval, unsigned 
     return syscall(__NR_getsockopt, sockfd, (long)level, (long)optname, (long)optval, (long)optlen);
 #endif
 }
+
 long sys_getsockname(long sockfd, void *addr, unsigned int *addrlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_GETSOCKNAME, sockfd, (long)addr, (long)addrlen, 0, 0, 0);
@@ -176,6 +198,7 @@ long sys_getsockname(long sockfd, void *addr, unsigned int *addrlen) {
     return syscall(__NR_getsockname, sockfd, (long)addr, (long)addrlen);
 #endif
 }
+
 long sys_getpeername(long sockfd, void *addr, unsigned int *addrlen) {
 #if defined(XXC_USE_SOCKETCALL)
     return sys_socketcall(XXC_SYS_GETPEERNAME, sockfd, (long)addr, (long)addrlen, 0, 0, 0);

@@ -28,7 +28,7 @@ static inline crt_lock_t *sio_lock_for(unsigned int stream)
     return (stream == SIOOUT) ? &g_stdout_lock : &g_stderr_lock;
 }
 
-void init_io(unsigned int out, unsigned int err)
+void sio_init(unsigned int out, unsigned int err)
 {
 #ifdef _WIN32
     g_err = GetStdHandle(err);

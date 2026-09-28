@@ -7,6 +7,7 @@
 
 #include <class.pph>
 #include <app.pph>
+#include <stream.pph>
 
 #define MINOR 1
 #define MAJOR 0
@@ -106,16 +107,16 @@ IMPLEMENT(Demo, int, run, (void *self))
 
     if (this->showVersion) 
     {
-        printf("%d.%d\n", MAJOR, MINOR);
+        CALL3(cout(), fprintf, "%d.%d\n", MAJOR, MINOR);
         return 0;
     } 
     else if (this->showAbout)
     {
-        puts("++C Demo", SIOOUT);
+        CALL1(cout(), fprintln, "++C Demo");
         return 0;
     }
     
-    printf("++C Demo v%d.%d\n", MAJOR, MINOR);
+    CALL3(cout(), fprintf, "++C Demo %d.%d\n", MAJOR, MINOR);
     CALL0(app, print_help);
 
     return 0;

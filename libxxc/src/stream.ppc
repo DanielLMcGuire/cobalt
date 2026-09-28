@@ -15,6 +15,11 @@ CONSTRUCTOR(Stream)
     METHOD_LINK(Stream, tell);
     METHOD_LINK(Stream, eof);
     METHOD_LINK(Stream, close);
+
+    METHOD_LINK(Stream, fprint);
+    METHOD_LINK(Stream, fprintln);
+    METHOD_LINK(Stream, fvprintf);
+    METHOD_LINK(Stream, fprintf);
 }
 
 DECONSTRUCTOR(Stream)
@@ -66,4 +71,61 @@ IMPLEMENT(Stream, int, eof, (void *self))
 IMPLEMENT(Stream, void, close, (void *self))
 {
     (void)self;
+}
+
+IMPLEMENT(Stream, i64, fprint, (void *self, const char *str))
+{
+    Stream *this = (Stream *)self;
+    if (!str) return 0;
+    return this->write(self, str, strlen(str));
+}
+
+IMPLEMENT(Stream, i64, fprintln, (void *self, const char *str))
+{
+    Stream *this = (Stream *)self;
+    i64 written = 0;
+    if (str)
+        written += this->write(self, str, strlen(str));
+    written += this->write(self, "\n", 1);
+    return written;
+}
+
+IMPLEMENT(Stream, int, fvprintf, (void *self, const char *fmt, va_list args))
+{
+    Stream *this = (Stream *)self;
+    char stack_buf[STREAM_STACK_BUF_SIZE];
+    va_list args_copy;
+    va_copy(args_copy, args);
+
+    int len = vsnprintf(stack_buf, sizeof(stack_buf), fmt, args);
+    if (len < 0) {
+        va_end(args_copy);
+        return len;
+    }
+
+    if ((size_t)len < sizeof(stack_buf)) {
+        this->write(self, stack_buf, (size_t)len);
+    } else {
+        char *dyn_buf = (char *)malloc((size_t)len + 1);
+        if (dyn_buf) {
+            vsnprintf(dyn_buf, (size_t)len + 1, fmt, args_copy);
+            this->write(self, dyn_buf, (size_t)len);
+            free(dyn_buf);
+        } else {
+            this->write(self, stack_buf, sizeof(stack_buf) - 1);
+        }
+    }
+
+    va_end(args_copy);
+    return len;
+}
+
+IMPLEMENT(Stream, int, fprintf, (void *self, const char *fmt, ...))
+{
+    Stream *this = (Stream *)self;
+    va_list args;
+    va_start(args, fmt);
+    int ret = this->fvprintf(self, fmt, args);
+    va_end(args);
+    return ret;
 }

@@ -337,7 +337,6 @@ Stream *fopen(const char *path, const char *mode)
 #endif
 }
 
-
 static FileStream *g_stdin_stream;
 static FileStream *g_stdout_stream;
 static FileStream *g_stderr_stream;
@@ -345,7 +344,7 @@ static FileStream *g_stderr_stream;
 #ifdef _WIN32
 #include <windows.h>
 
-void fs_init(void)
+void xxc_io_init(void)
 {
     g_stdin_stream = NEW(FileStream);
     g_stdout_stream = NEW(FileStream);
@@ -360,7 +359,7 @@ void fs_init(void)
 
 #elif defined(__linux__)
 
-void fs_init(void)
+void xxc_io_init(void)
 {
     g_stdout_stream = NEW(FileStream);
     g_stderr_stream = NEW(FileStream);
@@ -377,20 +376,17 @@ void fs_init(void)
 
 #endif
 
-Stream *stdin(void)
-{
-    return (Stream *)g_stdin_stream;
+Stream *cin(void) 
+{ 
+    return (Stream *)g_stdin_stream; 
 }
-
-Stream *stdout(void)
-{
-    return (Stream *)g_stdout_stream;
+Stream *cout(void) 
+{ 
+    return (Stream *)g_stdout_stream; 
 }
-
-
-Stream *stderr(void)
-{
-    return (Stream *)g_stderr_stream;
+Stream *cerr(void) 
+{ 
+    return (Stream *)g_stderr_stream; 
 }
 
 i64 fwrite(Stream *s, const char *str)
@@ -434,57 +430,4 @@ i64 freadline(Stream *s, dstr_t *out)
     }
 
     return total;
-}
-
-
-int fprintf(Stream *s, const char *fmt, ...)
-{
-    char stack_buf[1024];
-
-    va_list args;
-
-    va_start(args, fmt);
-
-    int len = vsnprintf(
-        stack_buf,
-        sizeof(stack_buf),
-        fmt,
-        args
-    );
-
-    va_end(args);
-
-    if (len < 0)
-        return len;
-
-    if (len < (int)sizeof(stack_buf)) 
-    {
-        fwrite(s, stack_buf);
-        return len;
-    }
-
-    char *buf = (char *)malloc((size_t)len + 1);
-
-    if (!buf)
-    {
-        fwrite(s, stack_buf);
-        return len;
-    }
-
-    va_start(args, fmt);
-
-    vsnprintf(
-        buf,
-        (size_t)len + 1,
-        fmt,
-        args
-    );
-
-    va_end(args);
-
-    fwrite(s, buf);
-
-    free(buf);
-
-    return len;
 }
