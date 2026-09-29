@@ -174,6 +174,7 @@ signal(SIGINT, SIG_IGN);
 
 ```c
 #include <files.pph>
+#include <ios.pph> // for cerr()
 
 void fwrite_demo(void)
 {
