@@ -3,6 +3,7 @@
 // Licensed under the MIT License
 
 #include <stream.pph>
+#include <str.h>
 
 CLASS_INFO_ROOT(Stream);
 
