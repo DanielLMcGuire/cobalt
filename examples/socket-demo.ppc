@@ -39,7 +39,7 @@ static void handle_sigint(int sig)
 static void *server_thread_func(void *arg)
 {
     SocketDemo *self = (SocketDemo *)arg;
-    self->run_server(self);
+    CALL0(self, run_server);
     return NULL;
 }
 
@@ -47,11 +47,10 @@ static void *client_thread_func(void *arg)
 {
     SocketDemo *self = (SocketDemo *)arg;
     
-    while (!atomic_bool_load(&g_server_ready)) {
+    while (!atomic_bool_load(&g_server_ready))
         thread_sleep_ms(10);
-    }
     
-    self->run_client(self);
+        CALL0(self, run_client);
     return NULL;
 }
 
