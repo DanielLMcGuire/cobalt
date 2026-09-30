@@ -1,4 +1,4 @@
-// ++C CRT
+// ++C C Runtime Library (libminicrt)
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
@@ -215,7 +215,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
                 } 
                 else 
                 {
-                    emit_int(buf, size, &idx, (unsigned long long)ptr, 0, 16, 0, width, 0, left_align, plus_sign, space_sign, 1, -1);
+                    emit_int(buf, size, &idx, (unsigned long long)(uintptr_t)ptr, 0, 16, 0, width, 0, left_align, plus_sign, space_sign, 1, -1);
                 }
                 break;
             }

@@ -1,4 +1,4 @@
-// ++C CRT
+// ++C C Runtime Library (libminicrt)
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
@@ -7,7 +7,29 @@
 
 #define __NORETURN__ while (1) (void)0;
 
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 201710L
+#if defined(__GNUC__) || defined(__clang__)
+    #define XXC_LIKELY(x)   __builtin_expect(!!(x), 1)
+    #define XXC_UNLIKELY(x) __builtin_expect(!!(x), 0)
+    #define XXC_NOINLINE    __attribute__((noinline))
+    #define XXC_NORETURN    __attribute__((noreturn))
+    #define XXC_UNUSED      __attribute__((unused))
+#elif defined(_MSC_VER)
+    #define XXC_LIKELY(x)   (x)
+    #define XXC_UNLIKELY(x) (x)
+    #define XXC_NOINLINE    __declspec(noinline)
+    #define XXC_NORETURN    __declspec(noreturn)
+    #define XXC_UNUSED
+#else
+    #define XXC_LIKELY(x)   (x)
+    #define XXC_UNLIKELY(x) (x)
+    #define XXC_NOINLINE
+    #define XXC_NORETURN
+    #define XXC_UNUSED
+#endif
+
+#define XXC_CACHELINE 64
+
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ <= 201710L
     #ifndef bool
         typedef int bool;
     #endif

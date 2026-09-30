@@ -1,4 +1,4 @@
-// ++C CRT
+// ++C C Runtime Library (libminicrt)
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 

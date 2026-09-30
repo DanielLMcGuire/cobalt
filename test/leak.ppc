@@ -1,3 +1,7 @@
+// ++C Runtime Library (leak-test)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
 #include <def.h>
 #include <cio.h>
 #include <str.h>

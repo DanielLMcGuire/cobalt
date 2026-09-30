@@ -49,7 +49,7 @@ IMPLEMENT(Application, void, parse_args, (void *self, const parr_t *argv))
     {
         path = (const char *)argv->data[0];
         dstr_t dsPath = dstr_new(path);
-        FSPath *fPath = fs(dsPath);
+        FSPath *fPath = fs_path(dsPath);
         dstr_free(&dsPath);
         FSPath *fParent = CALL0(fPath, base);
         REMOVE(fPath);

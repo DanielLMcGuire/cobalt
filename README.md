@@ -222,7 +222,7 @@ void stdio_demo(void)
 void path_demo(void)
 {
     dstr_t root_str = dstr_new("var/logs");
-    FSPath *path = fs(root_str);
+    FSPath *path = fs_path(root_str);
     dstr_free(&root_str);
 
     // join paths (handles separators)
@@ -255,7 +255,7 @@ void path_demo(void)
 bool file_ops_demo(void)
 {
     dstr_t name = dstr_new("test_file.tmp");
-    FSPath *p = fs(name);
+    FSPath *p = fs_path(name);
     dstr_free(&name);
 
     // create an empty file
@@ -344,5 +344,155 @@ static void run_client(void)
     CALL2(conn, write, "Hello!\n", 7);
     
     REMOVE(conn);
+}
+```
+
+### Maps
+
+```c
+#include <map.pph>
+#include <cio.h>
+
+void map_demo(void)
+{
+    Map *m = NEW(Map);
+
+    // set values (values are void pointers)
+    CALL2(m, set, "key1", (void *)(uintptr_t)42);
+    CALL2(m, set, "key2", (void *)(uintptr_t)100);
+
+    // check and get
+    if (CALL1(m, contains, "key1")) 
+    {
+        int val = (int)(uintptr_t)CALL1(m, get, "key1");
+        printf("key1: %d\n", val);
+    }
+
+    // iterate through map
+    size_t cursor = 0;
+    const char *key;
+    void *value;
+    
+    while (CALL4(m, iterate, &cursor, &key, NULL, &value)) 
+    {
+        printf("%s -> %d\n", key, (int)(uintptr_t)value);
+    }
+
+    // remove a key and free the map
+    CALL1(m, remove, "key1");
+    REMOVE(m);
+}
+```
+
+### Threads
+
+```c
+#include <thread.pph>
+#include <atomic.h>
+#include <cio.h>
+
+static void *thread_task(void *arg)
+{
+    atomic_i32_t *counter = (atomic_i32_t *)arg;
+    atomic_i32_fetch_add(counter, 1);
+    return (void *)(uintptr_t)0;
+}
+
+void thread_demo(void)
+{
+    atomic_i32_t counter = ATOMIC_INIT(0);
+
+    // create a thread using a function pointer
+    Thread *t = thread_new_fn(thread_task, &counter);
+
+    // start the thread
+    CALL0(t, start);
+
+    // wait for it to finish
+    CALL0(t, join);
+
+    printf("Counter: %d\n", atomic_i32_load(&counter));
+
+    // cleanup
+    REMOVE(t);
+}
+```
+
+### Semaphores
+
+```c
+#include <sem.h>
+#include <cio.h>
+
+void semaphore_demo(void)
+{
+    sem_t sem;
+
+    // initialize with a count of 1
+    sem_init(&sem, 1);
+
+    // acquire the semaphore (blocks if count is 0)
+    if (sem_wait(&sem) == SEM_SUCCESS) 
+    {
+        printf("Semaphore acquired!\n");
+
+        // release the semaphore (increments count)
+        sem_post(&sem);
+    }
+
+    // try to acquire without blocking
+    if (sem_trywait(&sem) == SEM_SUCCESS) 
+    {
+        sem_post(&sem);
+    }
+
+    // destroy when finished
+    sem_destroy(&sem);
+}
+```
+
+### Condition Variables
+
+```c
+#include <cond.h>
+#include <mutex.h>
+#include <cio.h>
+
+static mutex_t mtx = MUTEX_INIT;
+static cond_t cv;
+static bool ready = false;
+
+static void *waiter_thread(void *arg)
+{
+    mutex_lock(&mtx);
+    
+    // wait for the condition to be signaled
+    while (!ready) 
+    {
+        cond_wait(&cv, &mtx);
+    }
+    
+    printf("Ready state reached!\n");
+    mutex_unlock(&mtx);
+    
+    return NULL;
+}
+
+void cond_demo(void)
+{
+    cond_init(&cv);
+
+    // ... spawn waiter thread here ...
+
+    mutex_lock(&mtx);
+    ready = true;
+    
+    // wake up one waiting thread (use cond_broadcast to wake all)
+    cond_signal(&cv);
+    mutex_unlock(&mtx);
+
+    // ... join thread ...
+
+    cond_destroy(&cv);
 }
 ```

@@ -7,18 +7,24 @@ if (NOT TARGET xxc)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/FSPath.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/MemoryStream.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Socket.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Map.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Runnable.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Thread.ppc
     )
     set_source_files_properties(${XXC_SOURCES} PROPERTIES LANGUAGE C)
 
     add_library(xxc STATIC
         ${XXC_SOURCES}
-
+     ${CMAKE_CURRENT_SOURCE_DIR}/include/class.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/app.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/argparse.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/stream.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/files.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/fs.pph
         ${CMAKE_CURRENT_SOURCE_DIR}/include/mems.pph
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/map.pph
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/runnable.pph
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/thread.pph
     )
     add_library(xxc::xxc ALIAS xxc)
 
@@ -27,12 +33,4 @@ if (NOT TARGET xxc)
     target_include_directories(xxc PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     )
-
-    if (CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-        if (NOT WIN32 OR MINGW)
-            target_link_options(xxc INTERFACE
-                "LINKER:--start-group,$<TARGET_FILE:xxc>,$<TARGET_FILE:minicrt>,--end-group"
-            )
-        endif()
-    endif()
 endif()

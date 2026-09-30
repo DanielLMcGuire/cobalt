@@ -1,4 +1,4 @@
-// ++C CRT
+// ++C C Runtime Library (libminicrt)
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
@@ -16,6 +16,9 @@ int  atexit(atexit_func_t func);
 void exit(int status);
 
 void _exit(int status);
+
+#ifndef _WIN32
 static inline void _Exit(int status) { _exit(status); }
+#endif
 
 #endif /* ATEXIT_H */

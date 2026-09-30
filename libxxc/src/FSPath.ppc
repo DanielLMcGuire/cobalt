@@ -188,7 +188,7 @@ IMPLEMENT(FSPath, dstr_t, data, (void *self))
     return fs_path_to_str(this);
 }
 
-FSPath *fs(dstr_t path)
+FSPath *fs_path(dstr_t path)
 {
     FSPath *p = NEW(FSPath);
     fs_path_split(p, path.data);

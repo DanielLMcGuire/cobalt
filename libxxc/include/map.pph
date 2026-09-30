@@ -1,0 +1,52 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef XXC_MAP_H
+#define XXC_MAP_H
+
+#include <class.pph>
+#include <map.h>
+
+CLASS(Map)
+{
+    FIELD(map_t, table)
+
+    METHOD(bool,   set,            (void *self, const char *key, void *value))
+    METHOD(void *, get,            (void *self, const char *key))
+    METHOD(bool,   try_get,        (void *self, const char *key, void **out))
+    METHOD(bool,   contains,       (void *self, const char *key))
+    METHOD(bool,   remove,         (void *self, const char *key))
+
+    METHOD(bool,   set_bytes,      (void *self, const char *key, size_t key_len, void *value))
+    METHOD(void *, get_bytes,      (void *self, const char *key, size_t key_len))
+    METHOD(bool,   try_get_bytes,  (void *self, const char *key, size_t key_len, void **out))
+    METHOD(bool,   contains_bytes, (void *self, const char *key, size_t key_len))
+    METHOD(bool,   remove_bytes,   (void *self, const char *key, size_t key_len))
+
+    METHOD(size_t, len,            (void *self))
+    METHOD(void,   clear,          (void *self))
+    METHOD(bool,   iterate,        (void *self, size_t *cursor, const char **key_out, size_t *key_len_out, void **value_out))
+    METHOD(void,   set_value_free, (void *self, void (*fn)(void *value)))
+};
+
+CLASS_EXPORT(Map);
+
+METHOD_PROTO(Map, bool,   set,            (void *self, const char *key, void *value));
+METHOD_PROTO(Map, void *, get,            (void *self, const char *key));
+METHOD_PROTO(Map, bool,   try_get,        (void *self, const char *key, void **out));
+METHOD_PROTO(Map, bool,   contains,       (void *self, const char *key));
+METHOD_PROTO(Map, bool,   remove,         (void *self, const char *key));
+
+METHOD_PROTO(Map, bool,   set_bytes,      (void *self, const char *key, size_t key_len, void *value));
+METHOD_PROTO(Map, void *, get_bytes,      (void *self, const char *key, size_t key_len));
+METHOD_PROTO(Map, bool,   try_get_bytes,  (void *self, const char *key, size_t key_len, void **out));
+METHOD_PROTO(Map, bool,   contains_bytes, (void *self, const char *key, size_t key_len));
+METHOD_PROTO(Map, bool,   remove_bytes,   (void *self, const char *key, size_t key_len));
+
+METHOD_PROTO(Map, size_t, len,            (void *self));
+METHOD_PROTO(Map, void,   clear,          (void *self));
+METHOD_PROTO(Map, bool,   iterate,        (void *self, size_t *cursor, const char **key_out, size_t *key_len_out, void **value_out));
+METHOD_PROTO(Map, void,   set_value_free, (void *self, void (*fn)(void *value)));
+
+#endif /* XXC_MAP_H */

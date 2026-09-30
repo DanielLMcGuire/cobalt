@@ -1,4 +1,4 @@
-// ++C CRT | Platform (Linux)
+// ++C C Runtime Library (libminicrt) | Platform (Linux)
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
@@ -21,7 +21,7 @@ int sys_close(int fd)
 
 long sys_unlink(const char *path)
 {
-    return syscall(__NR_unlink, (long)path);
+    return syscall(__NR_unlinkat, (long)AT_FDCWD, (long)path, 0L);
 }
 
 long sys_lseek(int fd, long offset, int whence)
@@ -248,4 +248,45 @@ long sys_futex(int *uaddr, int op, int val, const void *timeout, int *uaddr2, in
 #endif
     }
     return ret;
+}
+
+int sys_mprotect(void *addr, size_t length, int prot)
+{
+    return (int)syscall(__NR_mprotect, (long)addr, (long)length, (long)prot);
+}
+
+int sys_madvise(void *addr, size_t length, int advice)
+{
+    return (int)syscall(__NR_madvise, (long)addr, (long)length, (long)advice);
+}
+
+long sys_sched_yield(void)
+{
+    return syscall(__NR_sched_yield);
+}
+
+long sys_nanosleep(const xxc_timespec_t *req, xxc_timespec_t *rem)
+{
+    return syscall(__NR_nanosleep, (long)req, (long)rem);
+}
+
+long sys_clock_gettime(int clock_id, xxc_timespec_t *out)
+{
+    return syscall(__NR_clock_gettime, (long)clock_id, (long)out);
+}
+
+long sys_set_tid_address(int *tidptr)
+{
+    return syscall(__NR_set_tid_address, (long)tidptr);
+}
+
+void sys_exit_thread(int status)
+{
+    (void)syscall(__NR_exit, (long)status);
+    __NORETURN__
+}
+
+long sys_rt_sigprocmask(int how, const void *set, void *oldset, size_t sigsetsize)
+{
+    return syscall(__NR_rt_sigprocmask, (long)how, (long)set, (long)oldset, (long)sigsetsize);
 }

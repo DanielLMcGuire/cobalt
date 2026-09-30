@@ -1,0 +1,200 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#include <thread.pph>
+#include <alloc.h>
+
+CLASS_INFO_ROOT(Thread);
+
+CONSTRUCTOR(Thread)
+{
+    self->handle = NULL;
+    self->target = NULL;
+    self->owns_target = false;
+    self->started = false;
+    self->joined = false;
+
+    METHOD_LINK(Thread, start);
+    METHOD_LINK(Thread, start_detached);
+    METHOD_LINK(Thread, join);
+    METHOD_LINK(Thread, detach);
+    METHOD_LINK(Thread, is_joinable);
+    METHOD_LINK(Thread, get_id);
+}
+
+DECONSTRUCTOR(Thread)
+{
+    if (self->started && !self->joined && self->handle)
+        thread_detach(self->handle);
+
+    if (self->owns_target && self->target)
+        REMOVE(self->target);
+}
+
+static void *thread_trampoline(void *arg)
+{
+    Thread *self = (Thread *)arg;
+    return CALL0(self->target, run);
+}
+
+typedef struct {
+    Runnable *target;
+    bool      owns_target;
+} detached_state_t;
+
+static void *detached_trampoline(void *arg)
+{
+    detached_state_t *state = (detached_state_t *)arg;
+    CALL0(state->target, run);
+    if (state->owns_target)
+        REMOVE(state->target);
+    free(state);
+    return NULL;
+}
+
+IMPLEMENT(Thread, bool, start, (void *self))
+{
+    Thread *this = (Thread *)self;
+    if (this->started || !this->target)
+        return false;
+
+    thread_attr_t attr = THREAD_ATTR_INIT;
+    if (thread_create(&this->handle, thread_trampoline, this, &attr) != THREAD_SUCCESS)
+        return false;
+
+    this->started = true;
+    return true;
+}
+
+IMPLEMENT(Thread, bool, start_detached, (void *self))
+{
+    Thread *this = (Thread *)self;
+    if (this->started || !this->target)
+        return false;
+
+    detached_state_t *state = (detached_state_t *)malloc(sizeof(detached_state_t));
+    if (!state)
+        return false;
+    state->target = this->target;
+    state->owns_target = this->owns_target;
+
+    thread_attr_t attr = THREAD_ATTR_INIT;
+    attr.detached = true;
+    thread_t handle;
+    if (thread_create(&handle, detached_trampoline, state, &attr) != THREAD_SUCCESS)
+    {
+        free(state);
+        return false;
+    }
+
+    this->owns_target = false;
+    this->handle = NULL;
+    this->started = true;
+    this->joined = true;
+    return true;
+}
+
+IMPLEMENT(Thread, void *, join, (void *self))
+{
+    Thread *this = (Thread *)self;
+    if (!this->started || this->joined || !this->handle)
+        return NULL;
+
+    void *retval = NULL;
+    thread_join(this->handle, &retval);
+    this->joined = true;
+    this->handle = NULL;
+    return retval;
+}
+
+IMPLEMENT(Thread, bool, detach, (void *self))
+{
+    Thread *this = (Thread *)self;
+    if (!this->started || this->joined || !this->handle)
+        return false;
+
+    if (thread_detach(this->handle) != THREAD_SUCCESS)
+        return false;
+
+    this->joined = true;
+    this->handle = NULL;
+    return true;
+}
+
+IMPLEMENT(Thread, bool, is_joinable, (void *self))
+{
+    Thread *this = (Thread *)self;
+    return this->started && !this->joined && this->handle != NULL;
+}
+
+IMPLEMENT(Thread, u32, get_id, (void *self))
+{
+    Thread *this = (Thread *)self;
+    return this->handle ? thread_id(this->handle) : 0;
+}
+
+Thread *thread_new(Runnable *target)
+{
+    Thread *t = NEW(Thread);
+    if (t)
+    {
+        t->target = target;
+        t->owns_target = false;
+    }
+    return t;
+}
+
+CLASS(FuncRunnable, Runnable)
+{
+    BASE(Runnable)
+    FIELD(thread_fn_t, fn)
+    FIELD(void *, arg)
+};
+
+CONSTRUCTOR(FuncRunnable);
+DECONSTRUCTOR(FuncRunnable);
+METHOD_PROTO(FuncRunnable, void *, run, (void *self));
+
+CLASS_INFO(FuncRunnable, Runnable);
+
+CONSTRUCTOR(FuncRunnable)
+{
+    SUPER_CTOR(self, Runnable);
+    self->fn = NULL;
+    self->arg = NULL;
+    METHOD_LINK(base, FuncRunnable, run);
+}
+
+DECONSTRUCTOR(FuncRunnable)
+{
+    SUPER_DTOR(self, Runnable);
+}
+
+IMPLEMENT(FuncRunnable, void *, run, (void *self))
+{
+    FuncRunnable *this = (FuncRunnable *)self;
+    return this->fn ? this->fn(this->arg) : NULL;
+}
+
+Thread *thread_new_fn(thread_fn_t fn, void *arg)
+{
+    if (!fn)
+        return NULL;
+
+    FuncRunnable *fr = NEW(FuncRunnable);
+    if (!fr)
+        return NULL;
+    fr->fn = fn;
+    fr->arg = arg;
+
+    Thread *t = NEW(Thread);
+    if (!t)
+    {
+        REMOVE(fr);
+        return NULL;
+    }
+    t->target = (Runnable *)fr;
+    t->owns_target = true;
+    return t;
+}

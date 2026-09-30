@@ -1,4 +1,4 @@
-// ++C CRT | Platform (win32)
+// ++C C Runtime Library (libminicrt) | Platform (win32)
 // Copyright 2026 Daniel McGuire
 // Licensed under the MIT License
 
@@ -14,7 +14,7 @@
 extern void* malloc(size_t size);
 extern void free(void *ptr);
 
-inline char** GetArgvA(int* pArgc)
+static inline char** GetArgvA(int* pArgc)
 {
     int argc = 0;
     LPWSTR cmdLine = GetCommandLineW();
@@ -46,7 +46,7 @@ inline char** GetArgvA(int* pArgc)
     return argv;
 }
 
-inline void FreeArgvA(int argc, char** argv)
+static inline void FreeArgvA(int argc, char** argv)
 {
     for (int i = 0; i < argc; i++) free(argv[i]);
     free(argv);

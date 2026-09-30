@@ -1,0 +1,19 @@
+// ++C Runtime Library (xxCRT)
+// Copyright 2026 Daniel McGuire
+// Licensed under the MIT License
+
+#ifndef RUNNABLE_H
+#define RUNNABLE_H
+
+#include <class.pph>
+
+CLASS(Runnable)
+{
+    METHOD(void *, run, (void *self))
+};
+
+CLASS_EXPORT(Runnable);
+
+METHOD_PROTO(Runnable, void *, run, (void *self));
+
+#endif /* RUNNABLE_H */
