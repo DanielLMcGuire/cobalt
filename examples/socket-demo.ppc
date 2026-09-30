@@ -161,7 +161,7 @@ IMPLEMENT(SocketDemo, void, run_server, (void *self))
     {
         CALL1(cout(), fprintln, "[Server] Client connected!");
 
-        CALL1(client, fprintln, "Welcome to the ++C Server!");
+        CALL1(client, fprint, "Welcome to the ++C Server!");
 
         char buf[256] = {0};
         i64 bytes = CALL2(client, read, buf, sizeof(buf) - 1);
@@ -197,7 +197,7 @@ IMPLEMENT(SocketDemo, void, run_client, (void *self))
     CALL2(conn, read, buf, sizeof(buf) - 1);
     CALL2(cout(), fprintf, "[Client] Server says: %s\n", buf);
 
-    CALL1(conn, fprintln, "Hello from ++C Client!\n");
+    CALL1(conn, fprint, "Hello from ++C Client!");
 
     REMOVE(conn);
 }
