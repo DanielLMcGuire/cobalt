@@ -13,9 +13,15 @@ INITRD ?= initrd.img
 LINUX_SIZE_MB ?= 128
 QEMU_FLAGS ?=
 
+KERNEL_DST ?= vmlinuz
+INITRD_DST ?= initrd.img
+KBASE ?= initrd=\\initrd.img quiet splash vt.global_cursor_default=0 fbcon=nodefer
+KFLAGS ?=
+BOOT_INI = out/boot.ini
+
 CRT_SRCS = str mem dstr iarr parr map alloc atexit format sio clock
 
-XXC_SRCS = Stream FileStream FSPath MemoryStream Map Argparse App
+XXC_SRCS = stream FileStream FSPath MemoryStream Map argparse app
 PLAT_SRCS = crt0 alloc console fs clock
 CRT_OBJS = $(addprefix out/crt_,$(CRT_SRCS:=.o)) $(addprefix out/xxc_,$(XXC_SRCS:=.o)) \
            $(addprefix out/uefi_,$(PLAT_SRCS:=.o))
@@ -71,9 +77,19 @@ bmp: out/uefi-bmp.EFI mkimage.sh
 	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
 	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
 
+BOOT_INI_BASE = $(strip $(KBASE) $(if $(wildcard $(INITRD)),initrd=\$(INITRD_DST)))
+BOOT_INI_KERNEL = kernel=$(KERNEL_DST)
+BOOT_INI_ARGS = args=$(strip $(KFLAGS))
+BOOT_INI_BASELINE = base=$(BOOT_INI_BASE)
+
 linux: out/uefi-linux.EFI mkimage.sh
 	@test -f $(KERNEL) || { echo "KERNEL=$(KERNEL) not found (needs an EFI-stub kernel)"; exit 1; }
-	SIZE_MB=$(LINUX_SIZE_MB) EXTRA="$(KERNEL):vmlinuz $(if $(wildcard $(INITRD)),$(INITRD):initrd.img)" sh mkimage.sh out/uefi-linux.EFI out/disk.img
+	@mkdir -p $(dir $(BOOT_INI))
+	@$(file >$(BOOT_INI),$(BOOT_INI_KERNEL))
+	@$(file >>$(BOOT_INI),$(BOOT_INI_BASELINE))
+	@$(file >>$(BOOT_INI),$(BOOT_INI_ARGS))
+	@echo "$(BOOT_INI)"; cat $(BOOT_INI);
+	SIZE_MB=$(LINUX_SIZE_MB) EXTRA="$(KERNEL):$(KERNEL_DST) $(if $(wildcard $(INITRD)),$(INITRD):$(INITRD_DST)) $(BOOT_INI):boot.ini" sh mkimage.sh out/uefi-linux.EFI out/disk.img
 	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
 	qemu-system-x86_64 -machine q35 -m 512 -vga std -serial stdio $(QEMU_FLAGS) \
 	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \

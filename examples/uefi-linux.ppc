@@ -2,34 +2,29 @@
 #include <ios.pph>
 #include <def.h>
 #include <alloc.h>
+#include <mem.h>
 #include <parr.h>
 #include <dstr.h>
 #include <files.pph>
 #include <uefi_sys.h>
+#include "uefi/display.pph"
+#include "uefi/bgrt.h"
 
-#define KERNEL_PATH "vmlinuz"
-#define CMDLINE "console=tty0 console=ttyS0,115200n8 initrd=\\initrd.img"
-
-// build command:
-// make -f Makefile.uefi APP=uefi-linux LINUX_SIZE_MB=64 QEMU_FLAGS="-m 2048 -nic user,model=virtio-net-pci,dns=$(ip route | grep default | awk '{print $3}') -display none" linux
-// to boot, use these args at startup (w/o newlines, e.g. arg1 arg2 arg3 ...) and hit enter:
-// loglevel=6 ip=10.0.2.15::10.0.2.2:255.255.255.0:alpine:eth0:none:1.1.1.1
-// alpine_repo=http://dl-cdn.alpinelinux.org/alpine/v3.20/main/
-// modloop=http://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/netboot/modloop-virt
+#define BOOT_INI "boot.ini"
 
 static CHAR16 g_cmdline[1024];
 
 static bool read_all(const char *path, u8 **out, size_t *size)
 {
-    Stream *f = fopen(path, "r");
+    SCOPED Stream *f = fopen(path, "r");
     if (!f) return false;
 
     CALL2(f, seek, 0, FS_SEEK_END);
     i64 n = CALL0(f, tell);
     CALL2(f, seek, 0, FS_SEEK_SET);
-    if (n <= 0) { REMOVE(f); return false; }
+    if (n <= 0) return false;
 
-    u8 *buf = malloc((size_t)n);
+    u8 *buf = malloc((size_t)n + 1);
     size_t got = 0;
     while (buf && got < (size_t)n)
     {
@@ -37,12 +32,70 @@ static bool read_all(const char *path, u8 **out, size_t *size)
         if (r <= 0) break;
         got += (size_t)r;
     }
-    REMOVE(f);
 
     if (!buf || got != (size_t)n) { free(buf); return false; }
+    buf[got] = 0;
     *out  = buf;
     *size = got;
     return true;
+}
+
+typedef struct {
+    dstr_t kernel;
+    dstr_t base;
+    dstr_t args;
+} boot_cfg_t;
+
+static bool is_space(char c) { return c == ' ' || c == '\t' || c == '\r'; }
+
+static void dstr_set_n(dstr_t *d, const char *s, size_t n)
+{
+    dstr_free(d);
+    *d = dstr_new("");
+    for (size_t i = 0; i < n; i++) dstr_append_char(d, s[i]);
+}
+
+static bool key_is(const char *k, size_t klen, const char *name)
+{
+    size_t i = 0;
+    while (i < klen && name[i] && k[i] == name[i]) i++;
+    return i == klen && name[i] == 0;
+}
+
+static void parse_boot_ini(const char *p, boot_cfg_t *cfg)
+{
+    while (*p)
+    {
+        const char *line = p;
+        while (*p && *p != '\n') p++;
+        const char *end = p;
+        if (*p == '\n') p++;
+
+        while (line < end && is_space(*line)) line++;
+        while (end > line && is_space(end[-1])) end--;
+        if (line == end || *line == '#' || *line == ';' || *line == '[') continue;
+
+        const char *eq = line;
+        while (eq < end && *eq != '=') eq++;
+        if (eq == end) continue;
+
+        const char *kend = eq;
+        while (kend > line && is_space(kend[-1])) kend--;
+        const char *v = eq + 1;
+        while (v < end && is_space(*v)) v++;
+
+        size_t klen = (size_t)(kend - line), vlen = (size_t)(end - v);
+        if      (key_is(line, klen, "kernel")) dstr_set_n(&cfg->kernel, v, vlen);
+        else if (key_is(line, klen, "base"))   dstr_set_n(&cfg->base,   v, vlen);
+        else if (key_is(line, klen, "args"))   dstr_set_n(&cfg->args,   v, vlen);
+    }
+}
+
+static void cmd_join(dstr_t *cmd, const char *part)
+{
+    if (!part || !part[0]) return;
+    if (cmd->len > 0) dstr_append_char(cmd, ' ');
+    dstr_append(cmd, part);
 }
 
 int program(parr_t csArgs)
@@ -50,25 +103,41 @@ int program(parr_t csArgs)
     (void)csArgs;
     EFI_BOOT_SERVICES *bs = __uefi_st->BootServices;
 
-    u8 *kernel = NULL;
-    size_t ksize = 0;
-    if (!read_all(KERNEL_PATH, &kernel, &ksize))
+    u8 *ini = NULL;
+    size_t inisize = 0;
+    if (!read_all(BOOT_INI, &ini, &inisize))
     {
-        printf("error: cannot read \\%s from the boot volume\n", KERNEL_PATH);
+        printf("error: cannot read \\%s from the boot volume\n", BOOT_INI);
         return 1;
     }
-    printf("read %d bytes from \\%s\n", (int)ksize, KERNEL_PATH);
+
+    boot_cfg_t cfg = { dstr_new(""), dstr_new(""), dstr_new("") };
+    parse_boot_ini((const char *)ini, &cfg);
+    free(ini);
+
+    if (cfg.kernel.len == 0)
+    {
+        printf("error: no kernel= in \\%s\n", BOOT_INI);
+        return 1;
+    }
+
+    u8 *kernel = NULL;
+    size_t ksize = 0;
+    if (!read_all(cfg.kernel.data, &kernel, &ksize))
+    {
+        printf("error: cannot read \\%s from the boot volume\n", cfg.kernel.data);
+        return 1;
+    }
+
+    dstr_t finalCmd = dstr_new("");
+    
+    cmd_join(&finalCmd, cfg.base.data);
+    cmd_join(&finalCmd, cfg.args.data);
 
     dstr_t userArgs;
-    printf("type any additional args to append, then hit enter:\n%s ", CMDLINE);
+    printf("type any additional args to append, then hit enter:\n%s ", finalCmd.data);
     freadline(cin(), &userArgs);
-
-    dstr_t finalCmd = dstr_new(CMDLINE);
-    if (userArgs.len > 0)
-    {
-        dstr_append_char(&finalCmd, ' ');
-        dstr_append(&finalCmd, userArgs.data);
-    }
+    cmd_join(&finalCmd, userArgs.data);
 
     size_t n = 0;
     while (finalCmd.data[n] && n < (sizeof(g_cmdline)/sizeof(CHAR16)) - 1) 
@@ -77,9 +146,14 @@ int program(parr_t csArgs)
         n++; 
     }
     g_cmdline[n] = 0;
+    if (finalCmd.data[n])
+        printf("warning: command line truncated to %d chars\n", (int)n);
 
     dstr_free(&finalCmd);
     dstr_free(&userArgs);
+    dstr_free(&cfg.kernel);
+    dstr_free(&cfg.base);
+    dstr_free(&cfg.args);
 
     EFI_HANDLE child = NULL;
     EFI_STATUS st = bs->LoadImage(0, __uefi_image, NULL, kernel, ksize, &child);
@@ -104,7 +178,12 @@ int program(parr_t csArgs)
     kern_li->LoadOptions     = g_cmdline;
     kern_li->LoadOptionsSize = (UINT32)((n + 1) * sizeof(CHAR16));
 
-    puts("starting kernel:", SIOOUT);
+    SCOPED_NEW(Display, disp);
+    if (display_init(disp))
+    {
+        CALL5(disp, fill_rect, 0, 0, disp->width, disp->height, CALL3(disp, color, 0, 0, 0));
+        draw_bgrt_logo(disp);
+    }
 
     st = bs->StartImage(child, NULL, NULL);
 

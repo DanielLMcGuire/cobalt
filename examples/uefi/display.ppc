@@ -1,4 +1,4 @@
-#include "uefi-display.pph"
+#include "display.pph"
 
 CLASS_INFO_ROOT(Display);
 

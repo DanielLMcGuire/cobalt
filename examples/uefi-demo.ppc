@@ -1,7 +1,7 @@
 #include <class.pph>
 #include <cio.h>
 #include <parr.h>
-#include "uefi/uefi-display.pph"
+#include "uefi/display.pph"
 
 CLASS(Shape)
 {
