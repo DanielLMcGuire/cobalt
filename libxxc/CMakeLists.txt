@@ -29,6 +29,7 @@ if (NOT TARGET xxc)
     add_library(xxc::xxc ALIAS xxc)
 
     target_link_libraries(xxc PUBLIC xxc::minicrt)
+    target_link_libraries(minicrt PUBLIC xxc)
 
     target_include_directories(xxc PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

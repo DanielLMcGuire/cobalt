@@ -4,6 +4,7 @@
 
 #include <stream.pph>
 #include <str.h>
+#include <memory.h>
 
 CLASS_INFO_ROOT(Stream);
 

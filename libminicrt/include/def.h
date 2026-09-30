@@ -13,18 +13,21 @@
     #define XXC_NOINLINE    __attribute__((noinline))
     #define XXC_NORETURN    __attribute__((noreturn))
     #define XXC_UNUSED      __attribute__((unused))
+    #define XXC_USED      __attribute__((used))
 #elif defined(_MSC_VER)
     #define XXC_LIKELY(x)   (x)
     #define XXC_UNLIKELY(x) (x)
     #define XXC_NOINLINE    __declspec(noinline)
     #define XXC_NORETURN    __declspec(noreturn)
     #define XXC_UNUSED
+    #define XXC_USED
 #else
     #define XXC_LIKELY(x)   (x)
     #define XXC_UNLIKELY(x) (x)
     #define XXC_NOINLINE
     #define XXC_NORETURN
     #define XXC_UNUSED
+    #define XXC_USED
 #endif
 
 #define XXC_CACHELINE 64
