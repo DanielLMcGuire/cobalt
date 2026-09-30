@@ -1,0 +1,85 @@
+#include <cio.h>
+#include <def.h>
+#include <alloc.h>
+#include <parr.h>
+#include <files.pph>
+#include <uefi_sys.h>
+
+#define KERNEL_PATH "vmlinuz"
+#define CMDLINE "earlycon=uart8250,io,0x3f8 initrd=\\initrd.img console=tty0 console=ttyS0 root=/dev/vda2 rw"
+
+static CHAR16 g_cmdline[512];
+
+static bool read_all(const char *path, u8 **out, size_t *size)
+{
+    Stream *f = fopen(path, "r");
+    if (!f) return false;
+
+    CALL2(f, seek, 0, FS_SEEK_END);
+    i64 n = CALL0(f, tell);
+    CALL2(f, seek, 0, FS_SEEK_SET);
+    if (n <= 0) { REMOVE(f); return false; }
+
+    u8 *buf = malloc((size_t)n);
+    size_t got = 0;
+    while (buf && got < (size_t)n)
+    {
+        i64 r = CALL2(f, read, buf + got, (size_t)n - got);
+        if (r <= 0) break;
+        got += (size_t)r;
+    }
+    REMOVE(f);
+
+    if (!buf || got != (size_t)n) { free(buf); return false; }
+    *out  = buf;
+    *size = got;
+    return true;
+}
+
+int program(parr_t csArgs)
+{
+    (void)csArgs;
+    EFI_BOOT_SERVICES *bs = __uefi_st->BootServices;
+
+    u8 *kernel = NULL;
+    size_t ksize = 0;
+    if (!read_all(KERNEL_PATH, &kernel, &ksize))
+    {
+        printf("error: cannot read \\%s from the boot volume\n", KERNEL_PATH);
+        return 1;
+    }
+    printf("read %d bytes from \\%s\n", (int)ksize, KERNEL_PATH);
+
+    EFI_HANDLE child = NULL;
+    EFI_STATUS st = bs->LoadImage(0, __uefi_image, NULL, kernel, ksize, &child);
+    if (EFI_ERROR(st))
+    {
+        printf("LoadImage failed: 0x%llx (not an EFI-stub kernel? Secure Boot?)\n", (long long)st);
+        free(kernel);
+        return 1;
+    }
+
+    EFI_GUID lig = EFI_LOADED_IMAGE_GUID;
+    EFI_LOADED_IMAGE_PROTOCOL *self_li = NULL, *kern_li = NULL;
+    bs->HandleProtocol(__uefi_image, &lig, (void **)&self_li);
+    bs->HandleProtocol(child,        &lig, (void **)&kern_li);
+    if (!self_li || !kern_li)
+    {
+        printf("error: no LoadedImage protocol\n");
+        return 1;
+    }
+
+    size_t n = 0;
+    while (CMDLINE[n] && n < 510) { g_cmdline[n] = (CHAR16)(unsigned char)CMDLINE[n]; n++; }
+    g_cmdline[n] = 0;
+
+    kern_li->DeviceHandle    = self_li->DeviceHandle;
+    kern_li->LoadOptions     = g_cmdline;
+    kern_li->LoadOptionsSize = (UINT32)((n + 1) * sizeof(CHAR16));
+
+    printf("starting kernel...\n");
+    st = bs->StartImage(child, NULL, NULL);
+
+    printf("kernel returned: 0x%llx\n", (long long)st);
+    return 1;
+}

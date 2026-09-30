@@ -1,3 +1,5 @@
 /build-linux
 /build
 /out
+initrd.img
+vmlinuz

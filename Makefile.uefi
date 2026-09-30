@@ -1,0 +1,85 @@
+CC = clang
+CFLAGS = --target=x86_64-unknown-windows -std=gnu2x -O2 \
+          -ffreestanding -fno-builtin -fno-stack-protector -mno-stack-arg-probe -mno-red-zone \
+          -U_WIN32 -U_WIN64 -D__UEFI__ -D_CORECRT_BUILD \
+          -Ilibminicrt/include -Ilibminicrt/internal -Ilibxxc/include -Iplatform/uefi \
+          -Wall -Wno-unused-function
+OVMF ?= /usr/share/OVMF
+
+APP ?= uefi-demo
+
+KERNEL ?= vmlinuz
+INITRD ?= initrd.img
+LINUX_SIZE_MB ?= 128
+QEMU_FLAGS ?=
+
+CRT_SRCS = str mem dstr iarr parr map alloc atexit format sio clock
+
+XXC_SRCS = Stream FileStream FSPath MemoryStream Map Argparse App
+PLAT_SRCS = crt0 alloc console fs clock
+CRT_OBJS = $(addprefix out/crt_,$(CRT_SRCS:=.o)) $(addprefix out/xxc_,$(XXC_SRCS:=.o)) \
+           $(addprefix out/uefi_,$(PLAT_SRCS:=.o))
+DISPLAY_OBJ = out/uefi_display.o
+
+all: out/disk.img
+
+out/crt_%.o: libminicrt/src/%.c
+	@mkdir -p out
+	$(CC) $(CFLAGS) -c $< -o $@
+out/uefi_%.o: platform/uefi/%.c
+	@mkdir -p out
+	$(CC) $(CFLAGS) -c $< -o $@
+out/xxc_%.o: libxxc/src/%.ppc
+	@mkdir -p out
+	$(CC) $(CFLAGS) -x c -c $< -o $@
+out/app_%.o: examples/%.ppc
+	@mkdir -p out
+	$(CC) $(CFLAGS) -x c -c $< -o $@
+out/uefi_%.o: examples/uefi/%.ppc
+	@mkdir -p out
+	$(CC) $(CFLAGS) -x c -c $< -o $@	
+
+out/uefi-test.EFI: out/app_uefi-test.o $(CRT_OBJS)
+	lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /opt:ref $^ /out:$@
+
+out/%.EFI: out/app_%.o $(DISPLAY_OBJ) $(CRT_OBJS)
+	lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /opt:ref $^ /out:$@
+
+out/BOOTX64.EFI: out/app_$(APP).o $(DISPLAY_OBJ) $(CRT_OBJS)
+	lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /opt:ref $^ /out:$@
+
+out/disk.img: out/BOOTX64.EFI mkimage.sh
+	sh mkimage.sh out/BOOTX64.EFI $@
+
+run: out/disk.img
+	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
+	qemu-system-x86_64 -machine q35 -m 256 -vga std \
+	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
+	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
+
+test: out/uefi-test.EFI mkimage.sh
+	sh mkimage.sh out/uefi-test.EFI out/disk.img
+	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
+	qemu-system-x86_64 -machine q35 -m 256 -vga std \
+	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
+	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
+
+bmp: out/uefi-bmp.EFI mkimage.sh
+	sh mkimage.sh out/uefi-bmp.EFI out/disk.img
+	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
+	qemu-system-x86_64 -machine q35 -m 256 -vga std \
+	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
+	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
+
+linux: out/uefi-linux.EFI mkimage.sh
+	@test -f $(KERNEL) || { echo "KERNEL=$(KERNEL) not found (needs an EFI-stub kernel)"; exit 1; }
+	SIZE_MB=$(LINUX_SIZE_MB) EXTRA="$(KERNEL):vmlinuz $(if $(wildcard $(INITRD)),$(INITRD):initrd.img)" sh mkimage.sh out/uefi-linux.EFI out/disk.img
+	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
+	qemu-system-x86_64 -machine q35 -m 512 -vga std -serial stdio $(QEMU_FLAGS) \
+	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
+	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
+
+clean:
+	rm -rf out
+
+.PHONY: all run test bmp linux clean
