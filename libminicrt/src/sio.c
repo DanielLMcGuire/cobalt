@@ -130,32 +130,40 @@ int putchar(int c, unsigned int stream)
 
 int vprintf(const char *fmt, va_list args, unsigned int stream)
 {
-    char stack_buf[PRINTF_STACK_BUF_SIZE];
     va_list args_copy;
-    
     va_copy(args_copy, args);
-    
-    int len = vsnprintf(stack_buf, sizeof(stack_buf), fmt, args);
-    
-    if (len >= 0 && len < (int)sizeof(stack_buf))
+
+    int len = vsnprintf(NULL, 0, fmt, args);
+    if (len < 0)
     {
-        print(stack_buf, stream);
-    } 
-    else if (len >= (int)sizeof(stack_buf))
-    {
-        char *dyn_buf = (char*)malloc(len + 1);
-        if (dyn_buf)
-        {
-            vsnprintf(dyn_buf, len + 1, fmt, args_copy);
-            print(dyn_buf, stream);
-            free(dyn_buf);
-        } 
-        else 
-        {
-            print(stack_buf, stream);
-        }
+        va_end(args_copy);
+        return len;
     }
-    
+
+    size_t size = (size_t)len + 1;
+    char *buf = NULL;
+    bool owns_buf = false;
+
+    if (size < PRINTF_STACK_BUF_SIZE) 
+    {
+        buf = alloca(size);
+    } 
+    else 
+    {
+        buf = (char *)malloc(size);
+        owns_buf = true;
+    }
+
+    if (buf) 
+    {
+        vsnprintf(buf, size, fmt, args_copy);
+
+        print(buf, stream);
+    }
+
+    if (owns_buf) 
+        free(buf);
+
     va_end(args_copy);
     return len;
 }

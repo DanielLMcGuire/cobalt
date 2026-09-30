@@ -84,45 +84,75 @@ IMPLEMENT(Stream, i64, fprint, (void *self, const char *str))
 IMPLEMENT(Stream, i64, fprintln, (void *self, const char *str))
 {
     Stream *this = (Stream *)self;
-    i64 written = 0;
-    if (str)
-        written += this->write(self, str, strlen(str));
-    written += this->write(self, "\n", 1);
+    
+    if (!str) 
+        return this->write(self, "\n", 1);
+
+    size_t len = strlen(str);
+    size_t total = len + 1;
+    char *buf = NULL;
+    bool owns_buf = false;
+
+    if (total < STREAM_STACK_BUF_SIZE) 
+    {
+        buf = alloca(total);
+    } 
+    else 
+    {
+        buf = (char *)malloc(total);
+        owns_buf = true;
+    }
+
+    if (!buf) 
+        return -1;
+
+    memcpy(buf, str, len);
+    buf[len] = '\n';
+
+    i64 written = this->write(self, buf, total);
+
+    if (owns_buf) 
+        free(buf);
+
     return written;
 }
 
 IMPLEMENT(Stream, int, fvprintf, (void *self, const char *fmt, va_list args))
 {
     Stream *this = (Stream *)self;
-    char stack_buf[STREAM_STACK_BUF_SIZE];
     va_list args_copy;
     va_copy(args_copy, args);
 
-    int len = vsnprintf(stack_buf, sizeof(stack_buf), fmt, args);
+    int len = vsnprintf(NULL, 0, fmt, args);
     if (len < 0)
     {
         va_end(args_copy);
         return len;
     }
 
-    if ((size_t)len < sizeof(stack_buf))
+    size_t size = (size_t)len + 1;
+    char *buf = NULL;
+    bool owns_buf = false;
+
+    if (size < STREAM_STACK_BUF_SIZE) 
     {
-        this->write(self, stack_buf, (size_t)len);
+        buf = alloca(size);
     } 
     else 
     {
-        char *dyn_buf = (char *)malloc((size_t)len + 1);
-        if (dyn_buf) 
-        {
-            vsnprintf(dyn_buf, (size_t)len + 1, fmt, args_copy);
-            this->write(self, dyn_buf, (size_t)len);
-            free(dyn_buf);
-        } 
-        else 
-        {
-            this->write(self, stack_buf, sizeof(stack_buf) - 1);
-        }
+        buf = (char *)malloc(size);
+        owns_buf = true;
     }
+
+    if (buf) 
+    {
+        vsnprintf(buf, size, fmt, args_copy);
+        
+        this->write(self, buf, (size_t)len);
+    }
+
+    if (owns_buf) 
+        free(buf);
 
     va_end(args_copy);
     return len;
