@@ -6,7 +6,7 @@
 #include <uefi_sys.h>
 
 #define KERNEL_PATH "vmlinuz"
-#define CMDLINE "earlycon=uart8250,io,0x3f8 initrd=\\initrd.img console=tty0 console=ttyS0 root=/dev/vda2 rw"
+#define CMDLINE "earlycon=uart8250,io,0x3f8 initrd=\\initrd.img console=tty0 console=ttyS0 root=/dev/sda2 rw"
 
 static CHAR16 g_cmdline[512];
 
