@@ -5,12 +5,43 @@
 #include <alloc.h>
 #include <def.h>
 #include <mem.h>
-#ifdef _WIN32
+#ifdef __UEFI__
+#include <uefi_sys.h>
+#elif defined(_WIN32)
 #include <windows.h>
 #elif defined(__linux__)
 #include <sys_linux.h>
 #include <linux_alloc.h>
 #endif
+
+#ifdef __UEFI__
+
+void* malloc(size_t size) 
+{
+    return __uefi_malloc(size);    
+}
+
+void* calloc(size_t n, size_t size) 
+{ 
+    return __uefi_calloc(n, size); 
+}
+
+void* realloc(void *p, size_t size) 
+{ 
+    return __uefi_realloc(p, size); 
+}
+
+void free(void *p) 
+{ 
+    __uefi_free(p); 
+}
+
+size_t malloc_usable_size(void *p) 
+{ 
+    return __uefi_usable_size(p); 
+}
+
+#else
 
 #ifdef _WIN32
 
@@ -91,3 +122,5 @@ size_t malloc_usable_size(void *ptr)
     return __linux_usable_size(ptr);
 }
 #endif
+
+#endif /* __UEFI__ */

@@ -1,0 +1,28 @@
+#ifndef UEFI_DISPLAY_H
+#define UEFI_DISPLAY_H
+
+#include <class.pph>
+#include <uefi_sys.h>
+
+CLASS(Display)
+{
+    FIELD(volatile u32 *, fb)
+    FIELD(u32, width)
+    FIELD(u32, height)
+    FIELD(u32, stride)
+    FIELD(bool, bgr)
+
+    METHOD(u32,  color,     (void *self, u8 r, u8 g, u8 b))
+    METHOD(void, put,       (void *self, i32 x, i32 y, u32 c))
+    METHOD(void, fill_rect, (void *self, i32 x, i32 y, i32 w, i32 h, u32 c))
+};
+
+CLASS_EXPORT(Display);
+
+bool display_init(Display *d);
+
+METHOD_PROTO(Display, u32, color, (void *self, u8 r, u8 g, u8 b));
+METHOD_PROTO(Display, void, put, (void *self, i32 x, i32 y, u32 c));
+METHOD_PROTO(Display, void, fill_rect, (void *self, i32 x, i32 y, i32 w, i32 h, u32 c));
+
+#endif /* UEFI_DISPLAY_H */

@@ -12,6 +12,8 @@
 #include <windows.h>
 #elif defined(__linux__)
 #include <sys_linux.h>
+#elif defined(__UEFI__)
+#include <uefi_sys.h>
 #endif
 
 CLASS_INFO_ROOT(FSPath);
@@ -148,6 +150,8 @@ IMPLEMENT(FSPath, bool, remove, (void *self))
 
 #if defined(_WIN32)
     success = DeleteFileA(path_str.data) != 0;
+#elif defined(__UEFI__)
+    success = __uefi_remove(path_str.data);
 #elif defined(__linux__)
     success = sys_unlink(path_str.data) == 0;
 #endif
@@ -169,6 +173,8 @@ IMPLEMENT(FSPath, bool, touch, (void *self))
         CloseHandle(h);
         success = true;
     }
+#elif defined(__UEFI__)
+    success = __uefi_touch(path_str.data);
 #elif defined(__linux__)
     int fd = sys_openat(AT_FDCWD, path_str.data, O_CREAT | O_WRONLY, 0666);
     if (fd >= 0)

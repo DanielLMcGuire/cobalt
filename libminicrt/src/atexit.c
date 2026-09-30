@@ -4,7 +4,15 @@
 #include <atexit.h>
 #include <crt_lock.h>
 
-#ifdef _WIN32
+#ifdef __UEFI__
+#include <uefi_sys.h>
+
+void _exit(int status)
+{
+    __uefi_halt(status);
+}
+
+#elif defined(_WIN32)
 #include <windows.h>
 
 void _exit(int status)

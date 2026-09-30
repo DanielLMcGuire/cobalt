@@ -15,6 +15,10 @@
 #include <sys_linux.h>
 #endif
 
+#if defined(__UEFI__)
+#include <uefi_sys.h>
+#endif
+
 CLASS_INFO(FileStream, Stream);
 
 CONSTRUCTOR(FileStream)
@@ -23,6 +27,8 @@ CONSTRUCTOR(FileStream)
 
 #if defined(_WIN32)
     self->fd = INVALID_HANDLE_VALUE;
+#elif defined(__UEFI__)
+    self->fd = NULL;
 #else
     self->fd = -1;
 #endif
@@ -46,6 +52,13 @@ DECONSTRUCTOR(FileStream)
         CloseHandle(self->fd);
 
     self->fd = INVALID_HANDLE_VALUE;
+
+#elif defined(__UEFI__)
+
+    if (self->owns_fd && self->fd)
+        __uefi_fclose(self->fd);
+
+    self->fd = NULL;
 
 #elif defined(__linux__)
 
@@ -87,6 +100,12 @@ IMPLEMENT(FileStream, i64, read, (void *self, void *buf, size_t n))
     if (bytes_read == 0) this->eof_flag = true;
     result = (i64)bytes_read;
 
+#elif defined(__UEFI__)
+    if (!this->fd) goto done;
+    if (!buf || n == 0) { result = 0; goto done; }
+    result = __uefi_fread(this->fd, buf, n);
+    if (result == 0) this->eof_flag = true;
+
 #elif defined(__linux__)
     long r = sys_read(this->fd, buf, n);
     if (r == 0) this->eof_flag = true;
@@ -114,6 +133,11 @@ IMPLEMENT(FileStream, i64, write, (void *self, const void *buf, size_t n))
 
     if (WriteFile(this->fd, buf, request, &bytes_written, NULL))
         result = (i64)bytes_written;
+
+#elif defined(__UEFI__)
+    if (!this->fd) goto done;
+    if (!buf || n == 0) { result = 0; goto done; }
+    result = __uefi_fwrite(this->fd, buf, n);
 
 #elif defined(__linux__)
     result = sys_write(this->fd, buf, n);
@@ -150,6 +174,11 @@ IMPLEMENT(FileStream, i64, seek, (void *self, i64 offset, int whence))
         result = (i64)position.QuadPart;
     }
 
+#elif defined(__UEFI__)
+    if (!this->fd) goto done;
+    result = __uefi_fseek(this->fd, offset, whence);
+    if (result >= 0) this->eof_flag = false;
+
 #elif defined(__linux__)
     long r = sys_lseek(this->fd, offset, whence);
     if (r >= 0) this->eof_flag = false;
@@ -174,6 +203,9 @@ IMPLEMENT(FileStream, i64, tell, (void *self))
     zero.QuadPart = 0;
     if (SetFilePointerEx(this->fd, zero, &position, FILE_CURRENT))
         result = (i64)position.QuadPart;
+#elif defined(__UEFI__)
+    if (!this->fd) goto done;
+    result = __uefi_ftell(this->fd);
 #elif defined(__linux__)
     result = sys_lseek(this->fd, 0, FS_SEEK_CUR);
 #endif
@@ -202,6 +234,12 @@ IMPLEMENT(FileStream, void, close, (void *self))
     {
         CloseHandle(this->fd);
         this->fd = INVALID_HANDLE_VALUE;
+    }
+#elif defined(__UEFI__)
+    if (this->owns_fd && this->fd)
+    {
+        __uefi_fclose(this->fd);
+        this->fd = NULL;
     }
 #elif defined(__linux__)
     if (this->owns_fd && this->fd >= 0)
@@ -276,6 +314,30 @@ Stream *fopen(const char *path, const char *mode)
     }
 
     fs->fd       = handle;
+    fs->owns_fd  = true;
+    fs->eof_flag = false;
+
+    return (Stream *)fs;
+
+#elif defined(__UEFI__)
+
+    if (mode[0] != 'r' && mode[0] != 'w' && mode[0] != 'a')
+        return NULL;
+
+    void *h = __uefi_fopen(path, mode);
+
+    if (!h)
+        return NULL;
+
+    FileStream *fs = NEW(FileStream);
+
+    if (!fs)
+    {
+        __uefi_fclose(h);
+        return NULL;
+    }
+
+    fs->fd       = h;
     fs->owns_fd  = true;
     fs->eof_flag = false;
 
@@ -361,6 +423,23 @@ void xxc_io_init(void)
     g_stdin_stream->owns_fd  = false;
     g_stdout_stream->owns_fd = false;
     g_stderr_stream->owns_fd = false;
+}
+
+#elif defined(__UEFI__)
+
+void xxc_io_init(void)
+{
+    g_stdout_stream = NEW(FileStream);
+    g_stderr_stream = NEW(FileStream);
+    g_stdin_stream  = NEW(FileStream);
+
+    g_stdout_stream->fd = UEFI_STDOUT;
+    g_stderr_stream->fd = UEFI_STDERR;
+    g_stdin_stream->fd  = UEFI_STDIN;
+
+    g_stdout_stream->owns_fd = false;
+    g_stderr_stream->owns_fd = false;
+    g_stdin_stream->owns_fd  = false;
 }
 
 #elif defined(__linux__)

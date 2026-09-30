@@ -1,0 +1,56 @@
+#include "uefi-display.pph"
+
+CLASS_INFO_ROOT(Display);
+
+bool display_init(Display *d)
+{
+    EFI_GUID guid = EFI_GOP_GUID;
+    EFI_GOP *gop = NULL;
+
+    if (__uefi_st->BootServices->LocateProtocol(&guid, NULL, (void **)&gop) != EFI_SUCCESS || !gop)
+        return false;
+
+    EFI_GOP_MODE_INFO *info = gop->Mode->Info;
+    if (info->PixelFormat != PixelBGRReserved8BitPerColor &&
+        info->PixelFormat != PixelRGBReserved8BitPerColor)
+        return false;
+
+    d->fb     = (volatile u32 *)gop->Mode->FrameBufferBase;
+    d->width  = info->HorizontalResolution;
+    d->height = info->VerticalResolution;
+    d->stride = info->PixelsPerScanLine;
+    d->bgr    = info->PixelFormat == PixelBGRReserved8BitPerColor;
+    return true;
+}
+
+IMPLEMENT(Display, u32, color, (void *self, u8 r, u8 g, u8 b))
+{
+    Display *d = self;
+    return d->bgr ? ((u32)r << 16 | (u32)g << 8 | b)
+                  : ((u32)b << 16 | (u32)g << 8 | r);
+}
+
+IMPLEMENT(Display, void, put, (void *self, i32 x, i32 y, u32 c))
+{
+    Display *d = self;
+    if (x < 0 || y < 0 || (u32)x >= d->width || (u32)y >= d->height) return;
+    d->fb[(u64)y * d->stride + x] = c;
+}
+
+IMPLEMENT(Display, void, fill_rect, (void *self, i32 x, i32 y, i32 w, i32 h, u32 c))
+{
+    Display *d = self;
+    for (i32 j = 0; j < h; j++)
+        for (i32 i = 0; i < w; i++)
+            d->put(d, x + i, y + j, c);
+}
+
+CONSTRUCTOR(Display)
+{
+    self->fb = NULL;
+    METHOD_LINK(Display, color);
+    METHOD_LINK(Display, put);
+    METHOD_LINK(Display, fill_rect);
+}
+
+DECONSTRUCTOR(Display) { (void)self; }

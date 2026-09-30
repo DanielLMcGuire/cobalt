@@ -13,7 +13,7 @@
 CLASS(FileStream, Stream)
 {
     BASE(Stream)
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__UEFI__)
     FIELD(void *, fd)
 #else
     FIELD(int,  fd)

@@ -1,0 +1,148 @@
+#include <class.pph>
+#include <cio.h>
+#include <parr.h>
+#include "uefi/uefi-display.pph"
+
+CLASS(Shape)
+{
+    FIELD(i32, x)
+    FIELD(i32, y)
+    FIELD(u32, color)
+
+    METHOD(void, draw, (void *self, Display *d))
+};
+
+CLASS_EXPORT(Shape);
+CLASS_INFO_ROOT(Shape);
+
+IMPLEMENT(Shape, void, draw, (void *self, Display *d)) { (void)self; (void)d; }
+
+CONSTRUCTOR(Shape)  { self->x = self->y = 0; self->color = 0; METHOD_LINK(Shape, draw); }
+DECONSTRUCTOR(Shape) { (void)self; }
+
+CLASS(Rect, Shape)
+{
+    BASE(Shape)
+    FIELD(i32, w)
+    FIELD(i32, h)
+};
+
+CLASS_EXPORT(Rect);
+CLASS_INFO(Rect, Shape);
+
+IMPLEMENT(Rect, void, draw, (void *self, Display *d))
+{
+    Rect *r = self;
+    CALL5(d, fill_rect, r->base.x, r->base.y, r->w, r->h, r->base.color);
+}
+
+CONSTRUCTOR(Rect)
+{
+    SUPER_CTOR(self, Shape);
+    self->w = self->h = 0;
+    METHOD_LINK(base, Rect, draw);
+}
+
+DECONSTRUCTOR(Rect) { SUPER_DTOR(self, Shape); }
+
+CLASS(Circle, Shape)
+{
+    BASE(Shape)
+    FIELD(i32, r)
+};
+
+CLASS_EXPORT(Circle);
+CLASS_INFO(Circle, Shape);
+
+static i32 isqrt(i32 n)
+{
+    i32 r = 0;
+    while ((r + 1) * (r + 1) <= n) r++;
+    return r;
+}
+
+IMPLEMENT(Circle, void, draw, (void *self, Display *d))
+{
+    Circle *c = self;
+    for (i32 dy = -c->r; dy <= c->r; dy++)
+    {
+        i32 dx = isqrt(c->r * c->r - dy * dy);
+        CALL5(d, fill_rect, c->base.x - dx, c->base.y + dy, 2 * dx + 1, 1, c->base.color);
+    }
+}
+
+CONSTRUCTOR(Circle)
+{
+    SUPER_CTOR(self, Shape);
+    self->r = 0;
+    METHOD_LINK(base, Circle, draw);
+}
+
+DECONSTRUCTOR(Circle) { SUPER_DTOR(self, Shape); }
+
+static Rect *make_rect(Display *d, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b)
+{
+    Rect *s = NEW(Rect);
+    s->base.x = x; s->base.y = y; s->w = w; s->h = h;
+    s->base.color = CALL3(d, color, r, g, b);
+    return s;
+}
+
+static Circle *make_circle(Display *d, i32 x, i32 y, i32 r, u8 cr, u8 cg, u8 cb)
+{
+    Circle *s = NEW(Circle);
+    s->base.x = x; s->base.y = y; s->r = r;
+    s->base.color = CALL3(d, color, cr, cg, cb);
+    return s;
+}
+
+int program(parr_t csArgs)
+{
+    EFI_SIMPLE_TEXT_OUTPUT *con = __uefi_st->ConOut;
+    con->ClearScreen(con);
+
+    Display *disp = NEW(Display);
+    if (!display_init(disp))
+    {
+        print("no usable GOP framebuffer\n", SIOERR);
+        REMOVE(disp);
+        return 1;
+    }
+
+    i32 W = (i32)disp->width, top = 260, H = (i32)disp->height - top;
+
+    for (u32 y = 0; y < disp->height; y++)
+    {
+        u8 v = (u8)(30 + (y * 120) / disp->height);
+        CALL5(disp, fill_rect, 0, (i32)y, W, 1, CALL3(disp, color, 10, v / 2, v));
+    }
+
+    parr_t scene = parr_new(NULL, 0);
+    parr_append_val(&scene, make_rect  (disp, W/10,   top + H/8,  W/4, H/3,   230,  80,  60));
+    parr_append_val(&scene, make_circle(disp, W/2,    top + H/2,  H/3,        250, 210,  40));
+    parr_append_val(&scene, make_rect  (disp, W*6/10, top + H/2,  W/4, H/3,    60, 200, 120));
+    parr_append_val(&scene, make_circle(disp, W*4/5,  top + H/5,  H/6,        240, 240, 250));
+
+    for (size_t i = 0; i < scene.len; i++)
+    {
+        Shape *s = AS(Shape, scene.data[i]);
+        CALL1(s, draw, disp);
+    }
+
+    con->SetCursorPosition(con, 0, 0);
+    print("args=", SIOOUT);
+    print_parr_c_string(&csArgs, SIOOUT);
+    printf("framebuffer %ux%u, stride %u, %s\n\n",
+           disp->width, disp->height, disp->stride, disp->bgr ? "BGRX" : "RGBX");
+    for (size_t i = 0; i < scene.len; i++)
+    {
+        Shape *s = AS(Shape, scene.data[i]);
+        printf("  drew %-6s at (%d,%d)\n", c_class(s)->name, s->x, s->y);
+    }
+
+    for (size_t i = 0; i < scene.len; i++) REMOVE(scene.data[i]);
+    parr_free(&scene);
+    REMOVE(disp);
+
+    return 0;
+}

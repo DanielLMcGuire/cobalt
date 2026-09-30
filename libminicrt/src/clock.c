@@ -4,7 +4,16 @@
 
 #include <clock.h>
 
-#if defined(_WIN32)
+#if defined(__UEFI__)
+#include <uefi_sys.h>
+
+extern u64 __uefi_monotonic_ns(void);
+u64 clock_monotonic_ns(void)
+{
+    return __uefi_monotonic_ns();
+}
+
+#elif defined(_WIN32)
 #include <windows.h>
 
 u64 clock_monotonic_ns(void)

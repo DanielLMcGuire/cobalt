@@ -10,7 +10,9 @@
 #include <def.h>
 #include <crt_lock.h>
 
-#ifdef _WIN32
+#ifdef __UEFI__
+#include <uefi_sys.h>
+#elif defined(_WIN32)
 #include <windows.h>
 static HANDLE g_err = INVALID_HANDLE_VALUE;
 static HANDLE g_out = INVALID_HANDLE_VALUE;
@@ -41,7 +43,9 @@ static int raw_print(const char *str, unsigned int stream)
 {
     if (str == NULL) return -1;
 
-#ifdef _WIN32
+#ifdef __UEFI__
+    __uefi_write(str, strlen(str), stream);
+#elif defined(_WIN32)
     HANDLE handle = (stream == SIOOUT) ? g_out :
                     ((stream == SIOERR) ? g_err : INVALID_HANDLE_VALUE);
 
@@ -74,7 +78,10 @@ static int raw_print(const char *str, unsigned int stream)
 
 static int raw_putchar(int c, unsigned int stream)
 {
-#ifdef _WIN32
+#ifdef __UEFI__
+    char ch = (char)c;
+    __uefi_write(&ch, 1, stream);
+#elif defined(_WIN32)
     HANDLE handle = (stream == SIOOUT) ? g_out :
                     ((stream == SIOERR) ? g_err : INVALID_HANDLE_VALUE);
 
