@@ -1,12 +1,12 @@
 if (NOT TARGET xxc)
     set(XXC_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/App.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Argparse.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Stream.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/argparse.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/stream.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/FileStream.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/FSPath.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/MemoryStream.ppc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Socket.ppc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/socket.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Map.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Runnable.ppc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Thread.ppc
