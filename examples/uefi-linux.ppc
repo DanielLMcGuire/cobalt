@@ -11,7 +11,7 @@
 #define CMDLINE "console=tty0 console=ttyS0,115200n8 initrd=\\initrd.img"
 
 // build command:
-// make -f Makefile.uefi APP=uefi-linux LINUX_SIZE_MB=64 QEMU_FLAGS="-m 2048 -nic user,model=virtio-net-pci,dns=172.24.16.1 -display none" linux
+// make -f Makefile.uefi APP=uefi-linux LINUX_SIZE_MB=64 QEMU_FLAGS="-m 2048 -nic user,model=virtio-net-pci,dns=$(ip route | grep default | awk '{print $3}') -display none" linux
 // to boot, use these args at startup (w/o newlines, e.g. arg1 arg2 arg3 ...) and hit enter:
 // loglevel=6 ip=10.0.2.15::10.0.2.2:255.255.255.0:alpine:eth0:none:1.1.1.1
 // alpine_repo=http://dl-cdn.alpinelinux.org/alpine/v3.20/main/
