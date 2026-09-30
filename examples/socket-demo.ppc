@@ -5,9 +5,10 @@
 #include <atexit.h>
 #include <atomic.h>
 
-#include <class.pph>
+#include <ios.pph>
 #include <app.pph>
 #include <socket.pph>
+#include <thread.pph>
 
 CLASS(SocketDemo, Application)
 {
@@ -19,8 +20,10 @@ CLASS(SocketDemo, Application)
 
 CLASS_EXPORT(SocketDemo);
 
-static volatile atomic_bool_t g_interrupted;
-static volatile atomic_u8_t g_interrupt_count;
+static volatile atomic_bool_t g_interrupted = ATOMIC_INIT(false);
+static volatile atomic_u8_t g_interrupt_count = ATOMIC_INIT(0);
+
+static atomic_bool_t g_server_ready = ATOMIC_INIT(false);
 
 static void handle_sigint(int sig)
 {
@@ -31,6 +34,25 @@ static void handle_sigint(int sig)
             while (!atomic_bool_cas(&g_interrupted, &bInterrupt, !bInterrupt)) {}
     else if (iInterrupt >= 2)
         _exit(130);
+}
+
+static void *server_thread_func(void *arg)
+{
+    SocketDemo *self = (SocketDemo *)arg;
+    self->run_server(self);
+    return NULL;
+}
+
+static void *client_thread_func(void *arg)
+{
+    SocketDemo *self = (SocketDemo *)arg;
+    
+    while (!atomic_bool_load(&g_server_ready)) {
+        thread_sleep_ms(10);
+    }
+    
+    self->run_client(self);
+    return NULL;
 }
 
 int program(parr_t csArgs)
@@ -73,7 +95,6 @@ int program(parr_t csArgs)
     return exit_code;
 }
 
-METHOD_PROTO(SocketDemo, void, configure_args, (void *self));
 METHOD_PROTO(SocketDemo, int, run, (void *self));
 METHOD_PROTO(SocketDemo, void, run_server, (void *self));
 METHOD_PROTO(SocketDemo, void, run_client, (void *self));
@@ -84,7 +105,6 @@ CONSTRUCTOR(SocketDemo)
 {
     SUPER_CTOR(self, Application);
 
-    METHOD_LINK(base, SocketDemo, configure_args);
     METHOD_LINK(base, SocketDemo, run);
     
     METHOD_LINK(SocketDemo, run_server);
@@ -96,58 +116,51 @@ DECONSTRUCTOR(SocketDemo)
     SUPER_DTOR(self, Application);
 }
 
-IMPLEMENT(SocketDemo, void, configure_args, (void *self))
-{
-    SocketDemo *this = (SocketDemo *)self;
-    
-    CALL2(this->base.args, add_flag, "server", "Run as a TCP Server");
-    CALL2(this->base.args, add_flag, "client", "Run as a TCP Client");
-}
-
 IMPLEMENT(SocketDemo, int, run, (void *self))
 {
     SocketDemo *this = (SocketDemo *)self;
+    atomic_bool_store(&g_server_ready, false);
 
-    bool is_server = CALL1(this->base.args, get_bool, "server");
-    bool is_client = CALL1(this->base.args, get_bool, "client");
+    Thread *server_thread = thread_new_fn(server_thread_func, this);
+    Thread *client_thread = thread_new_fn(client_thread_func, this);
 
-    if (is_server)
-    {
-        this->run_server(self);
-        return 0;
-    }
-    else if (is_client)
-    {
-        this->run_client(self);
-        return 0;
-    }
+    CALL0(server_thread, start);
+    CALL0(client_thread, start);
 
-    puts("Please specify either --server or --client", SIOOUT);
-    return 1;
+    CALL0(client_thread, join);
+    CALL0(server_thread, join);
+
+    REMOVE(client_thread);
+    REMOVE(server_thread);
+
+    return 0;
 }
 
 IMPLEMENT(SocketDemo, void, run_server, (void *self))
 {
     (void)self;
     u16 port = 8080;
-    printf("Starting server on port %d...\n", port);
+    CALL2(cout(), fprintf, "[Server] Starting server on port %d...\n", port);
 
     SocketStream *listener = tcp_listen(SOCK_INADDR_ANY, port, 5);
     
     if (!listener)
     {
-        printf("Failed to bind/listen on port %d.\n", port);
+
+        CALL2(cout(), fprintf, "[Server] Failed to bind/listen on port %d.\n", port);
         return;
     }
 
-    puts("Waiting for a connection...", SIOOUT);
+    CALL1(cout(), fprintln, "[Server] Waiting for a connection...");
+    
+    atomic_bool_store(&g_server_ready, true);
 
     sock_addr_in_t peer_addr;
     Stream *client = tcp_accept(listener, &peer_addr);
 
     if (client)
     {
-        puts("Client connected!", SIOOUT);
+        CALL1(cout(), fprintln, "[Server] Client connected!");
 
         CALL1(client, fprintln, "Welcome to the ++C Server!");
 
@@ -155,7 +168,7 @@ IMPLEMENT(SocketDemo, void, run_server, (void *self))
         i64 bytes = CALL2(client, read, buf, sizeof(buf) - 1);
         
         if (bytes > 0)
-            printf("Received from client: %s\n", buf);
+            CALL2(cout(), fprintf, "[Server] Received from client: %s\n", buf);
 
         REMOVE(client);
     }
@@ -169,21 +182,21 @@ IMPLEMENT(SocketDemo, void, run_client, (void *self))
     u16 port = 8080;
     const char* host = "127.0.0.1";
     
-    printf("Connecting to %s:%d...\n", host, port);
+    CALL3(cout(), fprintf, "[Client] Connecting to %s:%d...\n", host, port);
 
     Stream *conn = tcp_connect(host, port);
     
     if (!conn)
     {
-        puts("Connection failed.", SIOOUT);
+        CALL1(cout(), fprintln, "[Client] Connection failed.");
         return;
     }
 
-    puts("Connected!", SIOOUT);
+    CALL1(cout(), fprintln, "[Client] Connected!");
 
     char buf[256] = {0};
     CALL2(conn, read, buf, sizeof(buf) - 1);
-    printf("Server says: %s", buf);
+    CALL2(cout(), fprintf, "[Client] Server says: %s\n", buf);
 
     CALL1(conn, fprintln, "Hello from ++C Client!\n");
 
