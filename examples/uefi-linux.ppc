@@ -1,14 +1,23 @@
 #include <cio.h>
+#include <ios.pph>
 #include <def.h>
 #include <alloc.h>
 #include <parr.h>
+#include <dstr.h>
 #include <files.pph>
 #include <uefi_sys.h>
 
 #define KERNEL_PATH "vmlinuz"
-#define CMDLINE "earlycon=uart8250,io,0x3f8 initrd=\\initrd.img console=tty0 console=ttyS0 root=/dev/sda2 rw"
+#define CMDLINE "console=tty0 console=ttyS0,115200n8 initrd=\\initrd.img"
 
-static CHAR16 g_cmdline[512];
+// build command:
+// make -f Makefile.uefi APP=uefi-linux LINUX_SIZE_MB=64 QEMU_FLAGS="-m 2048 -nic user,model=virtio-net-pci,dns=172.24.16.1 -display none" linux
+// to boot, use these args at startup (w/o newlines, e.g. arg1 arg2 arg3 ...) and hit enter:
+// loglevel=6 ip=10.0.2.15::10.0.2.2:255.255.255.0:alpine:eth0:none:1.1.1.1
+// alpine_repo=http://dl-cdn.alpinelinux.org/alpine/v3.20/main/
+// modloop=http://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/netboot/modloop-virt
+
+static CHAR16 g_cmdline[1024];
 
 static bool read_all(const char *path, u8 **out, size_t *size)
 {
@@ -50,11 +59,33 @@ int program(parr_t csArgs)
     }
     printf("read %d bytes from \\%s\n", (int)ksize, KERNEL_PATH);
 
+    dstr_t userArgs;
+    printf("type any additional args to append, then hit enter:\n%s ", CMDLINE);
+    freadline(cin(), &userArgs);
+
+    dstr_t finalCmd = dstr_new(CMDLINE);
+    if (userArgs.len > 0)
+    {
+        dstr_append_char(&finalCmd, ' ');
+        dstr_append(&finalCmd, userArgs.data);
+    }
+
+    size_t n = 0;
+    while (finalCmd.data[n] && n < (sizeof(g_cmdline)/sizeof(CHAR16)) - 1) 
+    { 
+        g_cmdline[n] = (CHAR16)(unsigned char)finalCmd.data[n]; 
+        n++; 
+    }
+    g_cmdline[n] = 0;
+
+    dstr_free(&finalCmd);
+    dstr_free(&userArgs);
+
     EFI_HANDLE child = NULL;
     EFI_STATUS st = bs->LoadImage(0, __uefi_image, NULL, kernel, ksize, &child);
     if (EFI_ERROR(st))
     {
-        printf("LoadImage failed: 0x%llx (not an EFI-stub kernel? Secure Boot?)\n", (long long)st);
+        printf("LoadImage failed: 0x%llx (is this not an EFI-stub kernel? Is Secure Boot on?)\n", (long long)st);
         free(kernel);
         return 1;
     }
@@ -65,19 +96,16 @@ int program(parr_t csArgs)
     bs->HandleProtocol(child,        &lig, (void **)&kern_li);
     if (!self_li || !kern_li)
     {
-        printf("error: no LoadedImage protocol\n");
+        puts("error: no LoadedImage protocol", SIOOUT);
         return 1;
     }
-
-    size_t n = 0;
-    while (CMDLINE[n] && n < 510) { g_cmdline[n] = (CHAR16)(unsigned char)CMDLINE[n]; n++; }
-    g_cmdline[n] = 0;
 
     kern_li->DeviceHandle    = self_li->DeviceHandle;
     kern_li->LoadOptions     = g_cmdline;
     kern_li->LoadOptionsSize = (UINT32)((n + 1) * sizeof(CHAR16));
 
-    printf("starting kernel...\n");
+    puts("starting kernel:", SIOOUT);
+
     st = bs->StartImage(child, NULL, NULL);
 
     printf("kernel returned: 0x%llx\n", (long long)st);
