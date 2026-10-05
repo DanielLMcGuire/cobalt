@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 
 from . import state
 from .state import C
@@ -19,9 +20,58 @@ def write_makepkg_conf():
         f'MAKEFLAGS="-j{C.jobs}"\n'
         'OPTIONS=("${OPTIONS[@]/#debug/!debug}")\n')
 
+def _parse_pkgbuild_list(value):
+    value = value.strip()
+    if value.startswith("(") and value.endswith(")"):
+        value = value[1:-1]
+    return shlex.split(value, posix=True)
+
+
+def _fallback_packagelist(d):
+    try:
+        text = (d / "PKGBUILD").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    match = re.search(r"^\s*pkgname\s*=\s*(.+)$", text, re.MULTILINE)
+    if not match:
+        return []
+    pkgname = _parse_pkgbuild_list(match.group(1))
+
+    match = re.search(r"^\s*pkgver\s*=\s*(.+)$", text, re.MULTILINE)
+    if not match:
+        return []
+    pkgver = match.group(1).strip().strip("'\"")
+
+    match = re.search(r"^\s*pkgrel\s*=\s*(.+)$", text, re.MULTILINE)
+    if not match:
+        return []
+    pkgrel = match.group(1).strip().strip("'\"")
+
+    arch = "any"
+    match = re.search(r"^\s*arch\s*=\s*(.+)$", text, re.MULTILINE)
+    if match:
+        arch_names = _parse_pkgbuild_list(match.group(1))
+        if arch_names:
+            arch = arch_names[0]
+
+    if not pkgname or not pkgver or not pkgrel:
+        return []
+
+    pkgdest = state.PKGDEST
+    if pkgdest is None:
+        return []
+
+    return [str(pkgdest / f"{name}-{pkgver}-{pkgrel}-{arch}.pkg.tar.zst") for name in pkgname]
+
+
 def packagelist(d):
     o = out(MP("--packagelist"), cwd=d)
-    return [l for l in (o or "").splitlines() if l]
+    files = [l for l in (o or "").splitlines() if l]
+    if files:
+        return files
+    return _fallback_packagelist(d)
+
 
 def refresh_sums(d):
     new = out(MP("-g"), cwd=d)

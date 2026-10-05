@@ -51,6 +51,15 @@ out/boot_%.o: boot/%.ppc
 out/uefi_%.o: uefi/%.ppc
 	@mkdir -p out
 	$(CC) $(CFLAGS) -x c -c $< -o $@
+out/crt_%.o: xxc/libminicrt/src/%.c
+	@mkdir -p out
+	$(CC) $(CFLAGS) -c $< -o $@
+out/xxc_%.o: xxc/libxxc/src/%.ppc
+	@mkdir -p out
+	$(CC) $(CFLAGS) -x c -c $< -o $@
+out/uefi_%.o: xxc/platform/uefi/%.c
+	@mkdir -p out
+	$(CC) $(CFLAGS) -c $< -o $@
 
 out/uefi-linux.EFI: out/boot_bootloader.o $(DISPLAY_OBJ) $(CRT_OBJS)
 	lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /opt:ref $^ /out:$@
