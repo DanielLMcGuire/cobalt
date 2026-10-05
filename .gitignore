@@ -3,3 +3,8 @@
 /out
 initrd.img
 vmlinuz
+/system_out
+/build-fetchk
+/.buildk-cache
+/kernel_out
+**/__pycache__

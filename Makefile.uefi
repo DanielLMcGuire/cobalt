@@ -6,16 +6,31 @@ CFLAGS = --target=x86_64-unknown-windows -std=gnu2x -O2 \
           -Wall -Wno-unused-function
 OVMF ?= /usr/share/OVMF
 
-APP ?= uefi-demo
-
 KERNEL ?= vmlinuz
-INITRD ?= initrd.img
-LINUX_SIZE_MB ?= 128
+
 QEMU_FLAGS ?=
+
+PERSIST ?=
+
+QEMU ?= OFF
+
+define qemu_cmd
+cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
+qemu-system-x86_64 -machine q35 -m $(1) -vga std $(2) \
+	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
+	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
+endef
+
+ifneq ($(filter ON on 1 yes true,$(QEMU)),)
+run_qemu = $(call qemu_cmd,$(1),$(2))
+else
+define run_qemu
+@echo "QEMU=OFF: built out/disk.img, not launching QEMU (use QEMU=ON)"
+endef
+endif
 
 KERNEL_DST ?= vmlinuz
 INITRD_DST ?= initrd.img
-KBASE ?= initrd=\\initrd.img quiet splash vt.global_cursor_default=0 fbcon=nodefer
 KFLAGS ?=
 BOOT_INI = out/boot.ini
 
@@ -27,75 +42,33 @@ CRT_OBJS = $(addprefix out/crt_,$(CRT_SRCS:=.o)) $(addprefix out/xxc_,$(XXC_SRCS
            $(addprefix out/uefi_,$(PLAT_SRCS:=.o))
 DISPLAY_OBJ = out/uefi_display.o
 
-all: out/disk.img
+OFFLINE_INITRD ?= out/initrd-offline.img
+OFFLINE_KBASE ?= initrd=\$(INITRD_DST) quiet rdinit=/init vt.global_cursor_default=0 fbcon=nodefer
 
-out/crt_%.o: libminicrt/src/%.c
+out/boot_%.o: boot/%.ppc
 	@mkdir -p out
-	$(CC) $(CFLAGS) -c $< -o $@
-out/uefi_%.o: platform/uefi/%.c
-	@mkdir -p out
-	$(CC) $(CFLAGS) -c $< -o $@
-out/xxc_%.o: libxxc/src/%.ppc
+	$(CC) $(CFLAGS) -Iboot -x c -c $< -o $@
+out/uefi_%.o: uefi/%.ppc
 	@mkdir -p out
 	$(CC) $(CFLAGS) -x c -c $< -o $@
-out/app_%.o: examples/%.ppc
-	@mkdir -p out
-	$(CC) $(CFLAGS) -x c -c $< -o $@
-out/uefi_%.o: examples/uefi/%.ppc
-	@mkdir -p out
-	$(CC) $(CFLAGS) -x c -c $< -o $@	
 
-out/uefi-test.EFI: out/app_uefi-test.o $(CRT_OBJS)
+out/uefi-linux.EFI: out/boot_bootloader.o $(DISPLAY_OBJ) $(CRT_OBJS)
 	lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /opt:ref $^ /out:$@
 
-out/%.EFI: out/app_%.o $(DISPLAY_OBJ) $(CRT_OBJS)
-	lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /opt:ref $^ /out:$@
+$(OFFLINE_INITRD): mkinitramfs.sh FORCE
+	@mkdir -p $(dir $@)
+	BUSYBOX="$(BUSYBOX)" MODULES_PATH="$(MODULES)" OVERLAY="$(OVERLAY)" sh mkinitramfs.sh $@
 
-out/BOOTX64.EFI: out/app_$(APP).o $(DISPLAY_OBJ) $(CRT_OBJS)
-	lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /opt:ref $^ /out:$@
-
-out/disk.img: out/BOOTX64.EFI mkimage.sh
-	sh mkimage.sh out/BOOTX64.EFI $@
-
-run: out/disk.img
-	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
-	qemu-system-x86_64 -machine q35 -m 256 -vga std \
-	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
-	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
-
-test: out/uefi-test.EFI mkimage.sh
-	sh mkimage.sh out/uefi-test.EFI out/disk.img
-	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
-	qemu-system-x86_64 -machine q35 -m 256 -vga std \
-	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
-	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
-
-bmp: out/uefi-bmp.EFI mkimage.sh
-	sh mkimage.sh out/uefi-bmp.EFI out/disk.img
-	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
-	qemu-system-x86_64 -machine q35 -m 256 -vga std \
-	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
-	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
-
-BOOT_INI_BASE = $(strip $(KBASE) $(if $(wildcard $(INITRD)),initrd=\$(INITRD_DST)))
-BOOT_INI_KERNEL = kernel=$(KERNEL_DST)
-BOOT_INI_ARGS = args=$(strip $(KFLAGS))
-BOOT_INI_BASELINE = base=$(BOOT_INI_BASE)
-
-linux: out/uefi-linux.EFI mkimage.sh
+cobalt: out/uefi-linux.EFI $(OFFLINE_INITRD) mkimage.sh
 	@test -f $(KERNEL) || { echo "KERNEL=$(KERNEL) not found (needs an EFI-stub kernel)"; exit 1; }
 	@mkdir -p $(dir $(BOOT_INI))
-	@$(file >$(BOOT_INI),$(BOOT_INI_KERNEL))
-	@$(file >>$(BOOT_INI),$(BOOT_INI_BASELINE))
-	@$(file >>$(BOOT_INI),$(BOOT_INI_ARGS))
-	@echo "$(BOOT_INI)"; cat $(BOOT_INI);
-	SIZE_MB=$(LINUX_SIZE_MB) EXTRA="$(KERNEL):$(KERNEL_DST) $(if $(wildcard $(INITRD)),$(INITRD):$(INITRD_DST)) $(BOOT_INI):boot.ini" sh mkimage.sh out/uefi-linux.EFI out/disk.img
-	cp $(OVMF)/OVMF_VARS_4M.fd out/vars.fd
-	qemu-system-x86_64 -machine q35 -m 512 -vga std -serial stdio $(QEMU_FLAGS) \
-	  -drive if=pflash,format=raw,readonly=on,file=$(OVMF)/OVMF_CODE_4M.fd \
-	  -drive if=pflash,format=raw,file=out/vars.fd -drive format=raw,file=out/disk.img
+	@$(file >$(BOOT_INI),kernel=$(KERNEL_DST))
+	@$(file >>$(BOOT_INI),base=$(strip $(OFFLINE_KBASE)))
+	@$(file >>$(BOOT_INI),args=$(strip $(KFLAGS)))
+	@echo "$(BOOT_INI)"; cat $(BOOT_INI)
+	PERSIST_DIR="$(PERSIST)" EXTRA="$(KERNEL):$(KERNEL_DST) $(OFFLINE_INITRD):$(INITRD_DST) $(BOOT_INI):boot.ini" sh mkimage.sh out/uefi-linux.EFI out/disk.img
+	$(call run_qemu,1024,-serial stdio $(QEMU_FLAGS))
 
-clean:
-	rm -rf out
+FORCE:
 
-.PHONY: all run test bmp linux clean
+.PHONY: cobalt FORCE
