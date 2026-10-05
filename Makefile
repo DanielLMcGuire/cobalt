@@ -2,7 +2,7 @@ CC = clang
 CFLAGS = --target=x86_64-unknown-windows -std=gnu2x -O2 \
           -ffreestanding -fno-builtin -fno-stack-protector -mno-stack-arg-probe -mno-red-zone \
           -U_WIN32 -U_WIN64 -D__UEFI__ -D_CORECRT_BUILD \
-          -Ilibminicrt/include -Ilibminicrt/internal -Ilibxxc/include -Iplatform/uefi \
+          -Ixxc/libminicrt/include -Ixxc/libminicrt/internal -Ixxc/libxxc/include -Ixxc/platform/uefi \
           -Wall -Wno-unused-function
 OVMF ?= /usr/share/OVMF
 

@@ -10,22 +10,25 @@ from .state import HERE
 from .util import die, env, sh, step, tail
 
 XXC_PKGS = []
+XXC_DIR = HERE / "xxc"
+
 
 def xxc_source_hash():
     h = hashlib.sha256()
-    for rel in ("PKGBUILD", "LICENSE", "CMakeLists.txt", "cmake", "platform", "libminicrt", "libxxc"):
-        p = HERE / rel
+    for rel in ("PKGBUILD", "LICENSE", "CMakeLists.txt", "cmake", "platform", "libminicrt", "libxxc", "test"):
+        p = XXC_DIR / rel
         files = [p] if p.is_file() else sorted(q for q in p.rglob("*") if q.is_file())
         for f in files:
-            h.update(f.relative_to(HERE).as_posix().encode() + b"\0")
+            h.update(f.relative_to(XXC_DIR).as_posix().encode() + b"\0")
             h.update(f.read_bytes() + b"\0")
     return h.hexdigest()
 
+
 def build_xxc():
     step("Building ++C (libxxc, libminicrt) from this tree")
-    if not (HERE / "PKGBUILD").is_file():
-        die(f"no PKGBUILD in {HERE} (use --no-xxc to skip ++C)")
-    listed = packagelist(HERE)
+    if not (XXC_DIR / "PKGBUILD").is_file():
+        die(f"no PKGBUILD in {XXC_DIR} (use --no-xxc to skip ++C)")
+    listed = packagelist(XXC_DIR)
     if not listed:
         die("makepkg --packagelist returned nothing for the ++C PKGBUILD")
     stamp, cur = state.CACHE / "xxc.stamp", xxc_source_hash()
@@ -36,7 +39,7 @@ def build_xxc():
         print(f"  building libxxc 0.1.0 [local]...")
         print(f"    (log: {xlog})", flush=True)
         flags = ["--noconfirm", "--nodeps", "--force", "--nocheck"]
-        if sh(MP(*flags), cwd=HERE, log=xlog) != 0:
+        if sh(MP(*flags), cwd=XXC_DIR, log=xlog) != 0:
             print("\n".join(tail(xlog, 30)), file=sys.stderr)
             die(f"++C build failed (log: {xlog})")
         stamp.write_text(cur + "\n")
