@@ -3,9 +3,6 @@ set -e
 
 EFI=${1:-out/BOOTX64.EFI}
 IMG=${2:-out/disk.img}
-DISK_SIZE_MB=${SIZE_MB:-256}
-
-echo "Creating ${DISK_SIZE_MB}MB disk image (with persistent partition)"
 
 TOTAL_BYTES=0
 [ -f "$EFI" ] && TOTAL_BYTES=$(( TOTAL_BYTES + $(wc -c < "$EFI") ))
@@ -22,6 +19,7 @@ CONTENT_MB=$(( (TOTAL_BYTES + 1048575) / 1048576 ))
 ESP_SIZE_MB=$(( CONTENT_MB + 32 ))
 [ "$ESP_SIZE_MB" -lt 64 ] && ESP_SIZE_MB=64
 
+MIN_PERSIST_MB=8
 PERSIST_DIR=${PERSIST_DIR:-}
 if [ -n "$PERSIST_DIR" ]; then
     if [ ! -d "$PERSIST_DIR" ]; then
@@ -29,23 +27,36 @@ if [ -n "$PERSIST_DIR" ]; then
         exit 1
     fi
     PDIR_MB=$(( ($(du -sk "$PERSIST_DIR" | cut -f1) + 1023) / 1024 ))
-    NEED_MB=$(( ESP_SIZE_MB + 2 + PDIR_MB + PDIR_MB / 4 + 8 ))
-    if [ "$NEED_MB" -gt "$DISK_SIZE_MB" ]; then
-        if [ -n "$SIZE_MB" ]; then
-            echo "error: PERSIST_DIR needs ${NEED_MB}MB disk but SIZE_MB=${SIZE_MB}" >&2
-            exit 1
-        fi
-        DISK_SIZE_MB=$NEED_MB
-        echo "Growing disk to ${DISK_SIZE_MB}MB to fit PERSIST_DIR (${PDIR_MB}MB of files)"
+    MIN_PERSIST_MB=$(( PDIR_MB + PDIR_MB / 4 + 8 ))
+fi
+
+if [ -n "$PERSISTSIZE" ]; then
+    if [ "$PERSISTSIZE" -lt "$MIN_PERSIST_MB" ]; then
+        echo "error: PERSISTSIZE (${PERSISTSIZE}MB) is smaller than required minimum (${MIN_PERSIST_MB}MB)" >&2
+        exit 1
     fi
+    PERSIST_SIZE_MB="$PERSISTSIZE"
+    echo "Using PERSIST_SIZE_MB=${PERSIST_SIZE_MB}MB from PERSISTSIZE environment variable."
+else
+    RES_FILE=$(mktemp 2>/dev/null || echo "/tmp/persist_sz_$$")
+
+    python3 scripts/mkimage/wizard.py "$MIN_PERSIST_MB" "$RES_FILE"
+
+    if [ ! -s "$RES_FILE" ]; then
+        echo "Canceled by user." >&2
+        rm -f "$RES_FILE"
+        exit 1
+    fi
+
+    PERSIST_SIZE_MB=$(cat "$RES_FILE")
+    rm -f "$RES_FILE"
+    
+    echo "Using ${PERSIST_SIZE_MB}MB."
 fi
 
-if [ "$ESP_SIZE_MB" -ge "$DISK_SIZE_MB" ]; then
-    echo "error: Boot files (${ESP_SIZE_MB}MB) exceed target disk size (${DISK_SIZE_MB}MB)" >&2
-    exit 1
-fi
+DISK_SIZE_MB=$(( ESP_SIZE_MB + PERSIST_SIZE_MB + 2 ))
 
-PERSIST_SIZE_MB=$(( DISK_SIZE_MB - ESP_SIZE_MB - 2 ))
+echo "Creating ${DISK_SIZE_MB}MB disk image (with persistent partition)"
 echo "Partition layout: ESP=${ESP_SIZE_MB}MB, Persistent=${PERSIST_SIZE_MB}MB"
 
 dd if=/dev/zero of="$IMG" bs=1M count="$DISK_SIZE_MB" status=none
